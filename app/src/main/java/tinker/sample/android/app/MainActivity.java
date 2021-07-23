@@ -269,6 +269,7 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         //test
+                        method.setAccessible(true);
                         method.invoke(o);
 
                         //after
