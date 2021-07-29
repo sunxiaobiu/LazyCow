@@ -17,6 +17,7 @@
 package tinker.sample.android.app;
 
 import android.Manifest;
+import android.animation.ValueAnimator;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
@@ -24,6 +25,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.os.Build;
@@ -43,9 +45,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.judemanutd.autostarter.AutoStartPermissionHelper;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
+import com.yanzhikai.pictureprogressbar.PictureProgressBar;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -83,6 +87,7 @@ import tinker.sample.android.model.TestClassFile;
 import tinker.sample.android.receiver.AlarmReceiver;
 import tinker.sample.android.receiver.PatchUpgradeReceiver;
 import tinker.sample.android.util.DexUtils;
+import tinker.sample.android.util.MySharedPreferences;
 import tinker.sample.android.util.Utils;
 
 public class MainActivity extends AppCompatActivity {
@@ -97,11 +102,13 @@ public class MainActivity extends AppCompatActivity {
     private static String packageSeperator = ".";
     private static String testCaseName = "testCase";
     private static String successText = "success";
+    private static String packageName = "tinker.sample.android";
     private static String deviceId = "";
     private static Context context;
     private AlarmManager alarmMgr;
     private PendingIntent alarmIntent;
     private int TIME_INTERVAL = 5000; // 这是5s
+    private PictureProgressBar pb_2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,88 +125,75 @@ public class MainActivity extends AppCompatActivity {
 
         CircleButton startCrowdTestingButton = (CircleButton) findViewById(R.id.startCrowdTesting);
 
-        startCrowdTestingButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //obtain PatchAPK from remote server
-                Toast.makeText(getApplicationContext(), "Start CrowdTesting, please wait for download...", Toast.LENGTH_LONG).show();
-                generatePatchAPK();
-            }
-        });
-
         context = getApplicationContext();
         GlobalRef.applicationContext = context;
         deviceId = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID) + "_" + Build.SERIAL;
 
+        pb_2 = (PictureProgressBar) findViewById(R.id.pb_2);
+        final ValueAnimator valueAnimator = ValueAnimator.ofInt(0, 10000);
+        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                Log.d("sdsa", "onAnimationUpdate: " + Integer.parseInt(animation.getAnimatedValue().toString()));
+                pb_2.setProgress(Integer.parseInt(animation.getAnimatedValue().toString()));
+                if (pb_2.getProgress() >= pb_2.getMax()) {
+                    //进度满了之后改变图片
+                    pb_2.setPicture(R.drawable.runningcow);
+                }
+            }
+        });
+        startCrowdTestingButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getApplicationContext(), "Start CrowdTesting, please wait for download...", Toast.LENGTH_LONG).show();
+                generatePatchAPK(valueAnimator);
+            }
+        });
         //setScheduleExecuteTime();
-
-        try {
-            executeSingelTest("tinker.sample.android.androidtest.FullBackupTest");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
         registerReceiver();
 
         executeTestCases();
+
+        //申请动态权限
+        requestPermission();
+
+        //guide user to open AutoStartPermission
+        guideUser2AutoStartPage();
+
     }
 
-    private boolean isTestMethod(Method method) {
-        boolean isTestFlag = false;
-
-        //1.contains Test annotation
-        if (method.getAnnotations() != null) {
-            for (Annotation annotation : method.getAnnotations()) {
-                if (annotation.annotationType().toString().contains("Test")) {
-                    isTestFlag = true;
-                }
+    private void requestPermission() {
+        int permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        Log.d("permission", "permissionCheck==" + permissionCheck);
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setMessage("您拒绝过授予访问外部存储设备的权限,但是只有申请该权限,才能往外部存储设备写入数据,你确定要重新申请获取权限吗？")
+                        .setPositiveButton("ok", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                                //again request permission
+                                ActivityCompat.requestPermissions(MainActivity.this,
+                                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
+                                //writePatchAPKToExternalStorage(response, patchAPKName);
+                            }
+                        })
+                        .setNegativeButton("no", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        })
+                        .create()
+                        .show();
+            } else {
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
             }
         }
-
-        //2.public testXXX()
-        boolean isPublic = (method.getModifiers() & Modifier.PUBLIC) != 0;
-        if (method.getName().startsWith("test") && isPublic) {
-            isTestFlag = true;
-        }
-        return isTestFlag;
-    }
-
-    public static String getString(InputStream inputStream) {
-        BufferedReader bufferedReader;
-        StringBuffer strBuffer = new StringBuffer();
-        try {
-            bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-            String line = null;
-            while ((line = bufferedReader.readLine()) != null) {
-                strBuffer.append(line);
-                strBuffer.append("\n");
-            }
-            bufferedReader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return strBuffer.toString();
-    }
-
-    private void setScheduleExecuteTime() {
-        alarmMgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(context, AlarmReceiver.class);
-        alarmIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {//6.0低电量模式需要使用该方法触发定时任务
-            alarmMgr.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime(), alarmIntent);
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {//4.4以上 需要使用该方法精确执行时间
-            alarmMgr.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime(), alarmIntent);
-        } else {//4。4一下 使用老方法
-            alarmMgr.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime(), TIME_INTERVAL, alarmIntent);
-        }
-
-        // Set the alarm to start at xxx time
-        // TODO: 29/06/21
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(System.currentTimeMillis());
-        calendar.set(Calendar.HOUR_OF_DAY, 21);
-        calendar.set(Calendar.MINUTE, 32);
     }
 
     private void registerReceiver() {
@@ -261,10 +255,12 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         Object o = c.newInstance();
                         //before
-                        if(testClassFile.isHasBeforeClass()){
+                        if (testClassFile.isHasBeforeClass()) {
+                            testClassFile.getBeforeClassMethod().setAccessible(true);
                             testClassFile.getBeforeClassMethod().invoke(o);
                         }
-                        if(testClassFile.isHasBefore()){
+                        if (testClassFile.isHasBefore()) {
+                            testClassFile.getBeforeMethod().setAccessible(true);
                             testClassFile.getBeforeMethod().invoke(o);
                         }
 
@@ -273,22 +269,24 @@ public class MainActivity extends AppCompatActivity {
                         method.invoke(o);
 
                         //after
-                        if(testClassFile.isHasAfter()){
+                        if (testClassFile.isHasAfter()) {
+                            testClassFile.getAfterMethod().setAccessible(true);
                             testClassFile.getAfterMethod().invoke(o);
                         }
-                        if(testClassFile.isHasAfterClass()){
+                        if (testClassFile.isHasAfterClass()) {
+                            testClassFile.getAfterClassMethod().setAccessible(true);
                             testClassFile.getAfterClassMethod().invoke(o);
                         }
 
                     } catch (Exception e) {
                         e.printStackTrace();
                         System.out.println("==========================Test Case fail==========================class:" + testCaseClass + "; mehotd:" + method);
-                        TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, false, testCaseClass.replace(androidTestPackage + packageSeperator, "")+"."+method.getName(), ExceptionUtils.getStackTrace(e));
+                        TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, false, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), ExceptionUtils.getStackTrace(e));
                         postResult(deviceId, testCaseRecord);
                         return;
                     }
                     System.out.println("==========================Test Case success==========================class:" + testCaseClass + "; mehotd:" + method);
-                    TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, true, testCaseClass.replace(androidTestPackage + packageSeperator, "")+"."+method.getName(), successText);
+                    TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, true, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), successText);
                     postResult(deviceId, testCaseRecord);
                 }
             });
@@ -400,13 +398,13 @@ public class MainActivity extends AppCompatActivity {
         return testCaseRecord;
     }
 
-    public void generatePatchAPK() {
-        final Context context = getApplicationContext();
+    public void generatePatchAPK(ValueAnimator valueAnimator) {
+        pb_2.setPicture(R.drawable.runningcow);
+        valueAnimator.start();
+        valueAnimator.setDuration(1000);
+
         DeviceInfo deviceInfo = new DeviceInfo(getApplicationContext());
         deviceInfo.setDeviceId(deviceId);
-
-//        AutoStartPermissionHelper.getInstance().getAutoStartPermission(context);
-//        System.out.println("isAutoStartPermissionAvailable :" + AutoStartPermissionHelper.getInstance().isAutoStartPermissionAvailable(context));
 
         OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS)
                 .writeTimeout(10, TimeUnit.MINUTES)
@@ -423,42 +421,10 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(Call call, final Response response) throws IOException {
-                int permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-                Log.d("permission", "permissionCheck==" + permissionCheck);
-                if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-                    if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                        new AlertDialog.Builder(MainActivity.this)
-                                .setMessage("您拒绝过授予访问外部存储设备的权限,但是只有申请该权限,才能往外部存储设备写入数据,你确定要重新申请获取权限吗？")
-                                .setPositiveButton("ok", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        dialog.dismiss();
-                                        //again request permission
-                                        ActivityCompat.requestPermissions(MainActivity.this,
-                                                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
-                                        writePatchAPKToExternalStorage(response, patchAPKName);
-                                    }
-                                })
-                                .setNegativeButton("no", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        dialog.dismiss();
-                                    }
-                                })
-                                .create()
-                                .show();
-                    } else {
-                        // No explanation needed, we can request the permission.
-                        ActivityCompat.requestPermissions(MainActivity.this,
-                                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                                MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
-                    }
-
-                } else {
-                    //had granted
-                    writePatchAPKToExternalStorage(response, patchAPKName);
-                }
-
+                valueAnimator.setDuration(5000);
+                Log.d(TAG, "【generatePatchAPK】request success. ");
+                writePatchAPKToExternalStorage(response, patchAPKName);
+                valueAnimator.setDuration(10000);
             }
         });
     }
@@ -560,6 +526,39 @@ public class MainActivity extends AppCompatActivity {
         final AlertDialog alert = builder.create();
         alert.show();
         return true;
+    }
+
+    private void guideUser2AutoStartPage() {
+        //创建对象
+        final MySharedPreferences.SharedPreferencesUtil sharedPreferencesUtil = MySharedPreferences.SharedPreferencesUtil.getInstance(this);
+        //获取存储的判断是否是第一次启动，默认为true
+        boolean isFirst = (boolean) sharedPreferencesUtil.getData(GlobalRef.IS_FIRST_START, true);
+        if (isFirst) {
+            sharedPreferencesUtil.saveData(GlobalRef.IS_FIRST_START, false);
+            Toast.makeText(getApplicationContext(), "Please enable Auto Start Permission", Toast.LENGTH_LONG).show();
+            AutoStartPermissionHelper.getInstance().getAutoStartPermission(context);
+            System.out.println("isAutoStartPermissionAvailable :" + AutoStartPermissionHelper.getInstance().isAutoStartPermissionAvailable(context));
+        }
+    }
+
+    private boolean isTestMethod(Method method) {
+        boolean isTestFlag = false;
+
+        //1.contains Test annotation
+        if (method.getAnnotations() != null) {
+            for (Annotation annotation : method.getAnnotations()) {
+                if (annotation.annotationType().toString().contains("Test")) {
+                    isTestFlag = true;
+                }
+            }
+        }
+
+        //2.public testXXX()
+        boolean isPublic = (method.getModifiers() & Modifier.PUBLIC) != 0;
+        if (method.getName().startsWith("test") && isPublic) {
+            isTestFlag = true;
+        }
+        return isTestFlag;
     }
 
     @Override

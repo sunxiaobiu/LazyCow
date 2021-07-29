@@ -21,6 +21,7 @@ import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+
 import androidx.multidex.MultiDex;
 
 import com.tencent.tinker.anno.DefaultLifeCycle;
@@ -33,6 +34,7 @@ import com.tencent.tinker.loader.shareutil.ShareConstants;
 import tinker.sample.android.Log.MyLogImp;
 import tinker.sample.android.util.SampleApplicationContext;
 import tinker.sample.android.util.TinkerManager;
+
 
 /**
  * because you can not use any other class in your application, we need to
@@ -101,4 +103,5 @@ public class SampleApplicationLike extends DefaultApplicationLike {
     public void registerActivityLifecycleCallbacks(Application.ActivityLifecycleCallbacks callback) {
         getApplication().registerActivityLifecycleCallbacks(callback);
     }
+
 }
