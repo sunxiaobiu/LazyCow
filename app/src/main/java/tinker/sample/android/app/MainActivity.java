@@ -130,11 +130,11 @@ public class MainActivity extends AppCompatActivity {
         deviceId = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID) + "_" + Build.SERIAL;
 
         pb_2 = (PictureProgressBar) findViewById(R.id.pb_2);
-        final ValueAnimator valueAnimator = ValueAnimator.ofInt(0, 10000);
+        final ValueAnimator valueAnimator = ValueAnimator.ofInt(0, 100);
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
-                Log.d("sdsa", "onAnimationUpdate: " + Integer.parseInt(animation.getAnimatedValue().toString()));
+                Log.d("sdsa", "==============onAnimationUpdate==============" + Integer.parseInt(animation.getAnimatedValue().toString()));
                 pb_2.setProgress(Integer.parseInt(animation.getAnimatedValue().toString()));
                 if (pb_2.getProgress() >= pb_2.getMax()) {
                     //进度满了之后改变图片
@@ -155,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
         executeTestCases();
 
         //申请动态权限
-        requestPermission();
+        //requestPermission();
 
         //guide user to open AutoStartPermission
         guideUser2AutoStartPage();
@@ -164,9 +164,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void requestPermission() {
         int permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        Log.d("permission", "permissionCheck==" + permissionCheck);
+        Log.d("permission", "==================permissionCheck===========" + permissionCheck);
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                Log.d("shouldShowRequest", "==================shouldShowRequestPermissionRationale===========");
                 new AlertDialog.Builder(MainActivity.this)
                         .setMessage("您拒绝过授予访问外部存储设备的权限,但是只有申请该权限,才能往外部存储设备写入数据,你确定要重新申请获取权限吗？")
                         .setPositiveButton("ok", new DialogInterface.OnClickListener() {
@@ -188,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
                         .create()
                         .show();
             } else {
+                Log.d("requestPermissions", "==================requestPermissions===========");
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions(MainActivity.this,
                         new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
@@ -357,7 +359,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void postResult(String deviceId, final TestCaseRecord testCaseRecord) {
-        String postUrl = "http://118.138.243.2:8080/RemoteTest/testCase/collectRes";
+        String postUrl = "http://118.138.236.244:8080/RemoteTest/testCase/collectRes";
         OkHttpClient client = new OkHttpClient();
         RequestBody requestBody = null;
         try {
@@ -401,7 +403,7 @@ public class MainActivity extends AppCompatActivity {
     public void generatePatchAPK(ValueAnimator valueAnimator) {
         pb_2.setPicture(R.drawable.runningcow);
         valueAnimator.start();
-        valueAnimator.setDuration(1000);
+        valueAnimator.setIntValues(10);
 
         DeviceInfo deviceInfo = new DeviceInfo(getApplicationContext());
         deviceInfo.setDeviceId(deviceId);
@@ -412,7 +414,7 @@ public class MainActivity extends AppCompatActivity {
         RequestBody requestBody = new FormBody.Builder()
                 .add("deviceInfo", deviceInfo.toString())
                 .build();
-        Request request = new Request.Builder().url("http://118.138.243.2:8080/RemoteTest/testCase/generatePatchAPK").post(requestBody).build();
+        Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/generatePatchAPK").post(requestBody).build();
         builder.build().newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
@@ -421,24 +423,24 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(Call call, final Response response) throws IOException {
-                valueAnimator.setDuration(5000);
                 Log.d(TAG, "【generatePatchAPK】request success. ");
+                valueAnimator.setIntValues(60);
                 writePatchAPKToExternalStorage(response, patchAPKName);
-                valueAnimator.setDuration(10000);
+                valueAnimator.setIntValues(100);
             }
         });
     }
 
     private void writePatchAPKToExternalStorage(Response response, String fileName) {
         try {
-            File file = new File(Environment.getExternalStorageDirectory(), fileName);
+            File file = new File(context.getCacheDir(), fileName);
             if (file.exists()) {
                 System.out.println("delete former file:" + fileName);
                 file.delete();
             }
 
             InputStream is = response.body().byteStream();
-            OutputStream out = new FileOutputStream(new File(Environment.getExternalStorageDirectory(), fileName));
+            OutputStream out = new FileOutputStream(new File(context.getCacheDir(), fileName));
             byte[] buffer = new byte[1024];
             int len = 0;
             int readlen = 0;
@@ -450,7 +452,7 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("========FileName=====" + fileName + "========exist=====" + file.exists());
             sendBroadcast();
         } catch (IOException e) {
-            System.out.println("writeDatasToExternalStorage fail");
+            System.out.println("========writeDatasToExternalStorage fail========"+e);
 
         }
     }

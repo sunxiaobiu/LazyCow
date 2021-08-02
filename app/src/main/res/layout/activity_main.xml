@@ -11,38 +11,26 @@
     tools:context=".app.MainActivity">
 
     <ImageView
-        android:layout_width="150dp"
-        android:layout_height="100dp"
+        android:layout_width="100dp"
+        android:layout_height="80dp"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="5dp"
-        android:src="@drawable/lazycow"
-        />
+        android:src="@drawable/lazycow" />
 
     <TextView
         android:id="@+id/title"
         android:layout_width="386dp"
         android:layout_height="200dp"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="130dp"
+        android:layout_marginTop="85dp"
         android:fontFamily="monospace"
         android:singleLine="false"
-        android:text="Hi there, this is LazyCow, a \nmobile platform for supporting \ncrowdsourced unit testing."
+        android:text="Hi there, this is LazyCow, a \nmobile platform for supporting \ncrowdsourced unit testing.
+        I work as hard as Cow! \nYet, I am lazy and will only \nwork when you ask me to do \nso or your phone is idle for a \ncertain period."
         android:textAlignment="textStart"
         android:textAllCaps="false"
         android:textSize="20sp"
         android:textStyle="bold"
         android:typeface="serif" />
-
-    <TextView
-        android:id="@+id/instruction"
-        android:layout_width="386dp"
-        android:layout_height="120dp"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="220dp"
-        android:text="I work as hard as Cow! \nYet, I am lazy and will only \nwork when you ask me to do \nso or your phone is idle for a \ncertain period."
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:typeface="monospace" />
 
 
     <at.markushi.ui.CircleButton
@@ -52,7 +40,7 @@
         android:layout_centerHorizontal="true"
         android:layout_marginStart="0dp"
         android:layout_marginLeft="0dp"
-        android:layout_marginTop="370dp"
+        android:layout_marginTop="270dp"
         android:layout_marginEnd="0dp"
         android:src="@mipmap/start_1"
         app:cb_color="#E87373"
@@ -62,15 +50,15 @@
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:layout_marginLeft="250dp"
-        android:layout_marginTop="365dp"
+        android:layout_marginTop="265dp"
         android:src="@drawable/moo"
         />
 
     <com.yanzhikai.pictureprogressbar.PictureProgressBar
         android:id="@+id/pb_2"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginTop="550dp"
+        android:layout_width="500dp"
+        android:layout_height="25dp"
+        android:layout_marginTop="420dp"
         app:animMode="ANIM_NULL"
         app:drawable="@drawable/runningcow"
         app:gradientEndColor="#013E0B"

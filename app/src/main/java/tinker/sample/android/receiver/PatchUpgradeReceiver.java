@@ -21,7 +21,7 @@ public class PatchUpgradeReceiver extends BroadcastReceiver {
         if(intent.getAction().equals("com.finish.patch.downloadPatchAPK")){
             Log.i("onReceive","【PatchUpgradeReceiver】downloadPatchAPK msg.");
             Toast.makeText(context, "Download APK successfully,Please wait install...", Toast.LENGTH_LONG).show();
-            TinkerInstaller.onReceiveUpgradePatch(context, Environment.getExternalStorageDirectory().getAbsolutePath() + "/app-debug-patch_signed_7zip.apk");
+            TinkerInstaller.onReceiveUpgradePatch(context, context.getCacheDir().getAbsolutePath() + "/app-debug-patch_signed_7zip.apk");
 
         }else if(intent.getAction().equals("com.finish.patch.upgrade")){
             Log.i("onReceive","【PatchUpgradeReceiver】Receive msg.");
