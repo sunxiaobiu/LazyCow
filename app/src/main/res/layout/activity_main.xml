@@ -28,7 +28,7 @@
         \nI work as hard as Cow! \nYet, I am lazy and will only \nwork when you ask me to do \nso or your phone is idle for a \ncertain period."
         android:textAlignment="textStart"
         android:textAllCaps="false"
-        android:textSize="12sp"
+        android:textSize="18sp"
         android:textStyle="bold"
         android:typeface="serif" />
 
@@ -40,7 +40,7 @@
         android:layout_centerHorizontal="true"
         android:layout_marginStart="0dp"
         android:layout_marginLeft="0dp"
-        android:layout_marginTop="270dp"
+        android:layout_marginTop="250dp"
         android:layout_marginEnd="0dp"
         android:src="@mipmap/start_1"
         app:cb_color="#E87373"
@@ -66,7 +66,7 @@
         app:halfDrawableHeight="20dp"
         app:halfDrawableWidth="20dp"
         app:isGradient="true"
-        app:max="1000"
+        app:max="100"
         app:roundX="15dp"
         app:roundY="15dp" />
 

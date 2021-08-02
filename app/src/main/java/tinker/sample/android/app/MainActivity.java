@@ -28,6 +28,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -154,48 +155,9 @@ public class MainActivity extends AppCompatActivity {
 
         executeTestCases();
 
-        //申请动态权限
-        //requestPermission();
-
         //guide user to open AutoStartPermission
         guideUser2AutoStartPage();
 
-    }
-
-    private void requestPermission() {
-        int permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        Log.d("permission", "==================permissionCheck===========" + permissionCheck);
-        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                Log.d("shouldShowRequest", "==================shouldShowRequestPermissionRationale===========");
-                new AlertDialog.Builder(MainActivity.this)
-                        .setMessage("您拒绝过授予访问外部存储设备的权限,但是只有申请该权限,才能往外部存储设备写入数据,你确定要重新申请获取权限吗？")
-                        .setPositiveButton("ok", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                dialog.dismiss();
-                                //again request permission
-                                ActivityCompat.requestPermissions(MainActivity.this,
-                                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
-                                //writePatchAPKToExternalStorage(response, patchAPKName);
-                            }
-                        })
-                        .setNegativeButton("no", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                dialog.dismiss();
-                            }
-                        })
-                        .create()
-                        .show();
-            } else {
-                Log.d("requestPermissions", "==================requestPermissions===========");
-                // No explanation needed, we can request the permission.
-                ActivityCompat.requestPermissions(MainActivity.this,
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
-            }
-        }
     }
 
     private void registerReceiver() {
@@ -452,7 +414,7 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("========FileName=====" + fileName + "========exist=====" + file.exists());
             sendBroadcast();
         } catch (IOException e) {
-            System.out.println("========writeDatasToExternalStorage fail========"+e);
+            System.out.println("========writeDatasToExternalStorage fail========" + e);
 
         }
     }
