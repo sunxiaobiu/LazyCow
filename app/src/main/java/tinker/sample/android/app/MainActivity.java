@@ -403,7 +403,7 @@ public class MainActivity extends AppCompatActivity {
     public void generatePatchAPK(ValueAnimator valueAnimator) {
         pb_2.setPicture(R.drawable.runningcow);
         valueAnimator.start();
-        valueAnimator.setIntValues(10);
+        pb_2.setProgress(10);
 
         DeviceInfo deviceInfo = new DeviceInfo(getApplicationContext());
         deviceInfo.setDeviceId(deviceId);
@@ -424,9 +424,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call call, final Response response) throws IOException {
                 Log.d(TAG, "【generatePatchAPK】request success. ");
-                valueAnimator.setIntValues(60);
+                pb_2.setProgress(60);
                 writePatchAPKToExternalStorage(response, patchAPKName);
-                valueAnimator.setIntValues(100);
+                pb_2.setProgress(100);
             }
         });
     }

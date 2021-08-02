@@ -25,10 +25,10 @@
         android:fontFamily="monospace"
         android:singleLine="false"
         android:text="Hi there, this is LazyCow, a \nmobile platform for supporting \ncrowdsourced unit testing.
-        I work as hard as Cow! \nYet, I am lazy and will only \nwork when you ask me to do \nso or your phone is idle for a \ncertain period."
+        \nI work as hard as Cow! \nYet, I am lazy and will only \nwork when you ask me to do \nso or your phone is idle for a \ncertain period."
         android:textAlignment="textStart"
         android:textAllCaps="false"
-        android:textSize="20sp"
+        android:textSize="12sp"
         android:textStyle="bold"
         android:typeface="serif" />
 
