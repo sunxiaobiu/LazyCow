@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1874862867/LazyCow.iml" filepath="$PROJECT_DIR$/.idea/modules/-1874862867/LazyCow.iml" group="LazyCow" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-2112588289/app.iml" filepath="$PROJECT_DIR$/.idea/modules/-2112588289/app.iml" group="LazyCow/app" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/crowdtestinglibrary.iml" filepath="$PROJECT_DIR$/.idea/modules/crowdtestinglibrary.iml" group="LazyCow/crowdtestinglibrary" />
+    </modules>
+  </component>
+</project>

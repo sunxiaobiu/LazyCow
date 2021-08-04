@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Gradle: com.tencent.tinker:tinker-commons:1.9.14.17@jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.tencent.tinker/tinker-commons/1.9.14.17/6c2fbbdd101091e9c6c17e7776052424d8731777/tinker-commons-1.9.14.17.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.tencent.tinker/tinker-commons/1.9.14.17/90395c2405e77cc3e5da98077375e1a8313be9d6/tinker-commons-1.9.14.17-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.tencent.tinker/tinker-commons/1.9.14.17/bf449c4104418c9a505b83b26ba63a880889835d/tinker-commons-1.9.14.17-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

@@ -1,0 +1,15 @@
+<component name="libraryTable">
+  <library name="Gradle: org.lsposed.hiddenapibypass:hiddenapibypass:2.0@aar">
+    <CLASSES>
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/efd849bd6eabbdc6d775ba3d9b38f138/hiddenapibypass-2.0/AndroidManifest.xml" />
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/efd849bd6eabbdc6d775ba3d9b38f138/hiddenapibypass-2.0/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/efd849bd6eabbdc6d775ba3d9b38f138/hiddenapibypass-2.0/res" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.lsposed.hiddenapibypass/hiddenapibypass/2.0/135f8e0ad6be5c1c4476639a45252ca2c83d7ec0/hiddenapibypass-2.0-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.lsposed.hiddenapibypass/hiddenapibypass/2.0/c7d505369352434582f2027d70ae20f6b98046e6/hiddenapibypass-2.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

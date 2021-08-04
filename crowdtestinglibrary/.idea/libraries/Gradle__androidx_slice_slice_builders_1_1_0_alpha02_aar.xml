@@ -1,0 +1,16 @@
+<component name="libraryTable">
+  <library name="Gradle: androidx.slice:slice-builders:1.1.0-alpha02@aar">
+    <ANNOTATIONS>
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/bd8bffcf7decb900ff2b35c37ddb60b8/slice-builders-1.1.0-alpha02/annotations.zip!/" />
+    </ANNOTATIONS>
+    <CLASSES>
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/bd8bffcf7decb900ff2b35c37ddb60b8/slice-builders-1.1.0-alpha02/AndroidManifest.xml" />
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/bd8bffcf7decb900ff2b35c37ddb60b8/slice-builders-1.1.0-alpha02/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/bd8bffcf7decb900ff2b35c37ddb60b8/slice-builders-1.1.0-alpha02/res" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/androidx.slice/slice-builders/1.1.0-alpha02/486e75c8e5d69b4e613ad9e41a631f183b1bcb7f/slice-builders-1.1.0-alpha02-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

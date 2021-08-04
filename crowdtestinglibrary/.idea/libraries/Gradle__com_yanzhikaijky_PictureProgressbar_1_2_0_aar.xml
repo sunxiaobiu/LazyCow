@@ -1,0 +1,15 @@
+<component name="libraryTable">
+  <library name="Gradle: com.yanzhikaijky:PictureProgressbar:1.2.0@aar">
+    <CLASSES>
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/a7b9a3e6a7809d56243b05407296d9cf/PictureProgressbar-1.2.0/AndroidManifest.xml" />
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/a7b9a3e6a7809d56243b05407296d9cf/PictureProgressbar-1.2.0/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/a7b9a3e6a7809d56243b05407296d9cf/PictureProgressbar-1.2.0/res" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.yanzhikaijky/PictureProgressbar/1.2.0/59a7495c77efb8ae4e22345dd1e914f7efc88e64/PictureProgressbar-1.2.0-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.yanzhikaijky/PictureProgressbar/1.2.0/5a68442780d030268dad2beec4913966e74ac114/PictureProgressbar-1.2.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
