@@ -11,7 +11,9 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
+import com.yanzhikai.pictureprogressbar.PictureProgressBar;
 
+import tinker.sample.android.R;
 import tinker.sample.android.app.MainActivity;
 
 public class PatchUpgradeReceiver extends BroadcastReceiver {

@@ -17,22 +17,16 @@
 package tinker.sample.android.app;
 
 import android.Manifest;
-import android.animation.ValueAnimator;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
 import android.util.TypedValue;
@@ -56,19 +50,16 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.JSONException;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -85,7 +76,6 @@ import tinker.sample.android.R;
 import tinker.sample.android.model.DeviceInfo;
 import tinker.sample.android.model.TestCaseRecord;
 import tinker.sample.android.model.TestClassFile;
-import tinker.sample.android.receiver.AlarmReceiver;
 import tinker.sample.android.receiver.PatchUpgradeReceiver;
 import tinker.sample.android.util.DexUtils;
 import tinker.sample.android.util.MySharedPreferences;
@@ -100,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
     private static String androidTestPackage = "tinker.sample.android.androidtest";
     private static String firstTestEndfix = "Test";
     private static String secondTestEndfix = "Tests";
+    private static String testCasePrefix = "TestCase_";
     private static String packageSeperator = ".";
     private static String testCaseName = "testCase";
     private static String successText = "success";
@@ -131,23 +122,13 @@ public class MainActivity extends AppCompatActivity {
         deviceId = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID) + "_" + Build.SERIAL;
 
         pb_2 = (PictureProgressBar) findViewById(R.id.pb_2);
-        final ValueAnimator valueAnimator = ValueAnimator.ofInt(0, 100);
-        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-                Log.d("sdsa", "==============onAnimationUpdate==============" + Integer.parseInt(animation.getAnimatedValue().toString()));
-                pb_2.setProgress(Integer.parseInt(animation.getAnimatedValue().toString()));
-                if (pb_2.getProgress() >= pb_2.getMax()) {
-                    //进度满了之后改变图片
-                    pb_2.setPicture(R.drawable.runningcow);
-                }
-            }
-        });
+
         startCrowdTestingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Toast.makeText(getApplicationContext(), "Start CrowdTesting, please wait for download...", Toast.LENGTH_LONG).show();
-                generatePatchAPK(valueAnimator);
+                startCrowdTestingButton.setEnabled(false);
+                generatePatchAPK();
             }
         });
         //setScheduleExecuteTime();
@@ -177,13 +158,27 @@ public class MainActivity extends AppCompatActivity {
         System.out.println("=============================[tinker.isTinkerLoaded():]" + tinker.isTinkerLoaded());
         if (tinker.isTinkerLoaded()) {
             Toast.makeText(getApplicationContext(), "Start run test cases", Toast.LENGTH_LONG).show();
+            pb_2.setProgress(1);
             System.out.println("=============================[Start run test cases]");
             //step1. collect all test cases from DexFile
             List<String> allTestCaseClasses = new ArrayList<>();
             allTestCaseClasses.addAll(DexUtils.findClassesEndWith(firstTestEndfix));
             allTestCaseClasses.addAll(DexUtils.findClassesEndWith(secondTestEndfix));
+            allTestCaseClasses.addAll(DexUtils.findClassesStartWith(testCasePrefix));
+
+            //exclude tests from third party libraries
+            List<String> avaliableTestCaseClasses = new ArrayList<>();
+            if(CollectionUtils.isNotEmpty(allTestCaseClasses)){
+                for(String s : allTestCaseClasses){
+                    if(!s.startsWith("org.")){
+                        avaliableTestCaseClasses.add(s);
+                    }
+                }
+            }
+
             //step2. execute test cases
-            executeTests(allTestCaseClasses);
+            executeTests(avaliableTestCaseClasses);
+            pb_2.setProgress(100);
             Toast.makeText(getApplicationContext(), "Test run is finished", Toast.LENGTH_LONG).show();
         }
 
@@ -194,9 +189,14 @@ public class MainActivity extends AppCompatActivity {
 
     public void executeTests(List<String> testCaseClasses) {
         System.out.println("==========================Begin Test Case=================================");
+        int totalTestNum = testCaseClasses.size();
+        int count = 0;
         for (String testCaseClass : testCaseClasses) {
             try {
                 executeSingelTest(testCaseClass);
+                count ++;
+                int progress = (int) (count * 1.0f / totalTestNum * 100);
+                pb_2.setProgress(progress);
             } catch (Exception e) {
                 System.out.println("==========================Test Case Exception==========================" + testCaseClass);
                 continue;
@@ -362,10 +362,9 @@ public class MainActivity extends AppCompatActivity {
         return testCaseRecord;
     }
 
-    public void generatePatchAPK(ValueAnimator valueAnimator) {
+    public void generatePatchAPK() {
         pb_2.setPicture(R.drawable.runningcow);
-        valueAnimator.start();
-        pb_2.setProgress(10);
+        pb_2.setProgress(30);
 
         DeviceInfo deviceInfo = new DeviceInfo(getApplicationContext());
         deviceInfo.setDeviceId(deviceId);
