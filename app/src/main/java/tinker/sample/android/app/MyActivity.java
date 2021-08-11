@@ -81,7 +81,7 @@ import tinker.sample.android.util.DexUtils;
 import tinker.sample.android.util.MySharedPreferences;
 import tinker.sample.android.util.Utils;
 
-public class MainActivity extends AppCompatActivity {
+public class MyActivity extends AppCompatActivity {
     private static final String TAG = "Tinker.MainActivity";
 
     private TextView mTvMessage = null;
@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
     private static String androidTestPackage = "tinker.sample.android.androidtest";
     private static String firstTestEndfix = "Test";
     private static String secondTestEndfix = "Tests";
-    private static String testCasePrefix = "TestCase_";
+    private static String testCasePrefix = "tinker.sample.android.androidtest.TestCase_";
     private static String packageSeperator = ".";
     private static String testCaseName = "testCase";
     private static String successText = "success";
@@ -108,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         boolean isARKHotRunning = ShareTinkerInternals.isArkHotRuning();
         Log.e(TAG, "ARK HOT Running status = " + isARKHotRunning);
-        Log.e(TAG, "i am on onCreate classloader:" + MainActivity.class.getClassLoader().toString());
+        Log.e(TAG, "i am on onCreate classloader:" + MyActivity.class.getClassLoader().toString());
         //test resource change
         Log.e(TAG, "i am on onCreate string:" + getResources().getString(R.string.test_resource));
 //        Log.e(TAG, "i am on patch onCreate");
@@ -162,9 +162,11 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("=============================[Start run test cases]");
             //step1. collect all test cases from DexFile
             List<String> allTestCaseClasses = new ArrayList<>();
-            allTestCaseClasses.addAll(DexUtils.findClassesEndWith(firstTestEndfix));
-            allTestCaseClasses.addAll(DexUtils.findClassesEndWith(secondTestEndfix));
+//            allTestCaseClasses.addAll(DexUtils.findClassesEndWith(firstTestEndfix));
+//            allTestCaseClasses.addAll(DexUtils.findClassesEndWith(secondTestEndfix));
             allTestCaseClasses.addAll(DexUtils.findClassesStartWith(testCasePrefix));
+
+            System.out.println("=============================allTestCaseClasses："+allTestCaseClasses.size());
 
             //exclude tests from third party libraries
             List<String> avaliableTestCaseClasses = new ArrayList<>();
@@ -191,13 +193,16 @@ public class MainActivity extends AppCompatActivity {
         System.out.println("==========================Begin Test Case=================================");
         int totalTestNum = testCaseClasses.size();
         int count = 0;
+        System.out.println("=============================totalTestNum====================="+totalTestNum);
         for (String testCaseClass : testCaseClasses) {
+            System.out.println("=============================testCaseClass====================="+testCaseClass);
             try {
                 executeSingelTest(testCaseClass);
                 count ++;
                 int progress = (int) (count * 1.0f / totalTestNum * 100);
                 pb_2.setProgress(progress);
             } catch (Exception e) {
+                System.out.println(e.getMessage());
                 System.out.println("==========================Test Case Exception==========================" + testCaseClass);
                 continue;
             }
@@ -207,9 +212,13 @@ public class MainActivity extends AppCompatActivity {
 
     public void executeSingelTest(final String testCaseClass) throws Exception {
         Class c = Class.forName(testCaseClass);
+        System.out.println("==============c============"+c.getName());
 
         TestClassFile testClassFile = resolveTestClass(c);
+        System.out.println("=============================testClassFile====================="+testClassFile.getC().toString());
+
         if (CollectionUtils.isEmpty(testClassFile.getTestMethodList())) {
+            System.out.println("=============================getTestMethodList Empty=====================");
             return;
         }
         for (Method method : testClassFile.getTestMethodList()) {
@@ -231,6 +240,7 @@ public class MainActivity extends AppCompatActivity {
                         //test
                         method.setAccessible(true);
                         method.invoke(o);
+                        System.out.println("=============================method invoke====================="+method.getName());
 
                         //after
                         if (testClassFile.isHasAfter()) {
@@ -260,8 +270,11 @@ public class MainActivity extends AppCompatActivity {
 
     private TestClassFile resolveTestClass(Class c) {
         TestClassFile testClassFile = new TestClassFile();
+        testClassFile.setC(c);
         if (CollectionUtils.isNotEmpty(Arrays.asList(c.getMethods()))) {
             for (Method method : c.getDeclaredMethods()) {
+                System.out.println("==============resolveTestClass============"+method.getName());
+
                 //BeforeClass
                 if (method.getAnnotations() != null) {
                     for (Annotation annotation : method.getAnnotations()) {

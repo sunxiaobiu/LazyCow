@@ -6,15 +6,12 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Environment;
 import android.util.Log;
 import android.widget.Toast;
 
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
-import com.yanzhikai.pictureprogressbar.PictureProgressBar;
 
-import tinker.sample.android.R;
-import tinker.sample.android.app.MainActivity;
+import tinker.sample.android.app.MyActivity;
 
 public class PatchUpgradeReceiver extends BroadcastReceiver {
     @SuppressLint("WrongConstant")
@@ -30,7 +27,7 @@ public class PatchUpgradeReceiver extends BroadcastReceiver {
 
             //restart self
             System.out.println("=============================[start restart self]");
-            Intent i = new Intent(context, MainActivity.class);
+            Intent i = new Intent(context, MyActivity.class);
             int flags = Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK;
 
             AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);

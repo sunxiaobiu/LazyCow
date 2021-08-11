@@ -35,6 +35,12 @@ allprojects {
             options.compilerArgs.add('-Xbootclasspath/p:app/hidden/android-30.jar')
         }
     }
+    // Allow 100000 errors.
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << "-Xmaxerrs" << "30000"
+        }
+    }
 }
 
 def is_gradle_3() {
