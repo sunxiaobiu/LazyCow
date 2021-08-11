@@ -90,6 +90,7 @@ dependencies {
     //androidbootstrap
 //    implementation 'com.beardedhen:androidbootstrap:2.3.2'
     implementation 'com.github.markushi:circlebutton:1.1'
+    implementation project(path: ':crowdtestinglibrary')
 
     //android hidden API
 //    implementation 'com.anggrayudi:android-hidden-api:30.0'
