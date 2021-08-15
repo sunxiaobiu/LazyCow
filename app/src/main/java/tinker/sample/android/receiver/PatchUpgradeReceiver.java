@@ -14,16 +14,24 @@ import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import tinker.sample.android.app.MyActivity;
 
 public class PatchUpgradeReceiver extends BroadcastReceiver {
+
+    UpdateUIListenner updateUIListenner;
+
+    UpdateTextListenner updateTextListenner;
+
     @SuppressLint("WrongConstant")
     @Override
     public void onReceive(Context context, Intent intent) {
         if(intent.getAction().equals("com.finish.patch.downloadPatchAPK")){
             Log.i("onReceive","【PatchUpgradeReceiver】downloadPatchAPK msg.");
             Toast.makeText(context, "Download APK successfully,Please wait install...", Toast.LENGTH_LONG).show();
+            updateTextListenner.UpdateText("Updating test cases...");
+            updateUIListenner.UpdateUI(10);
             TinkerInstaller.onReceiveUpgradePatch(context, context.getCacheDir().getAbsolutePath() + "/app-debug-patch_signed_7zip.apk");
-
+            updateUIListenner.UpdateUI(70);
         }else if(intent.getAction().equals("com.finish.patch.upgrade")){
             Log.i("onReceive","【PatchUpgradeReceiver】Receive msg.");
+            updateUIListenner.UpdateUI(100);
 
             //restart self
             System.out.println("=============================[start restart self]");
@@ -31,11 +39,27 @@ public class PatchUpgradeReceiver extends BroadcastReceiver {
             int flags = Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK;
 
             AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-            mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 1000, PendingIntent.getActivity(context, 0, i, flags));
+            mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 1, PendingIntent.getActivity(context, 0, i, flags));
             android.os.Process.killProcess(android.os.Process.myPid());
         }else{
             throw new RuntimeException("【Unsupported Broadcast Action Type】");
         }
-
     }
+
+    /**
+     * 监听广播接收器的接收到的数据
+     * @param updateUIListenner
+     */
+    public void setOnUpdateUIListenner(UpdateUIListenner updateUIListenner) {
+        this.updateUIListenner = updateUIListenner;
+    }
+
+    /**
+     * 监听广播接收器的接收到的数据
+     * @param updateTextListenner
+     */
+    public void setOnUpdateTextListenner(UpdateTextListenner updateTextListenner) {
+        this.updateTextListenner = updateTextListenner;
+    }
+
 }

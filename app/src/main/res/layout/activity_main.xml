@@ -57,17 +57,26 @@
     <com.yanzhikai.pictureprogressbar.PictureProgressBar
         android:id="@+id/pb_2"
         android:layout_width="500dp"
-        android:layout_height="25dp"
+        android:layout_height="30dp"
         android:layout_marginTop="420dp"
         app:animMode="ANIM_NULL"
         app:drawable="@drawable/runningcow"
         app:gradientEndColor="#013E0B"
         app:gradientStartColor="#4CAF50"
-        app:halfDrawableHeight="20dp"
-        app:halfDrawableWidth="20dp"
+        app:halfDrawableHeight="15dp"
+        app:halfDrawableWidth="15dp"
         app:isGradient="true"
         app:max="100"
         app:roundX="15dp"
         app:roundY="15dp" />
+
+    <TextView
+        android:id="@+id/textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="450dp"
+        android:textStyle="bold"
+        android:typeface="serif"
+        android:text="" />
 
 </RelativeLayout>

@@ -77,6 +77,8 @@ import tinker.sample.android.model.DeviceInfo;
 import tinker.sample.android.model.TestCaseRecord;
 import tinker.sample.android.model.TestClassFile;
 import tinker.sample.android.receiver.PatchUpgradeReceiver;
+import tinker.sample.android.receiver.UpdateTextListenner;
+import tinker.sample.android.receiver.UpdateUIListenner;
 import tinker.sample.android.util.DexUtils;
 import tinker.sample.android.util.MySharedPreferences;
 import tinker.sample.android.util.Utils;
@@ -101,6 +103,8 @@ public class MyActivity extends AppCompatActivity {
     private PendingIntent alarmIntent;
     private int TIME_INTERVAL = 5000; // 这是5s
     private PictureProgressBar pb_2;
+    private CircleButton startCrowdTestingButton;
+    private TextView textview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,37 +115,37 @@ public class MyActivity extends AppCompatActivity {
         Log.e(TAG, "i am on onCreate classloader:" + MyActivity.class.getClassLoader().toString());
         //test resource change
         Log.e(TAG, "i am on onCreate string:" + getResources().getString(R.string.test_resource));
-//        Log.e(TAG, "i am on patch onCreate");
 
-        askForRequiredPermissions();
-
-        CircleButton startCrowdTestingButton = (CircleButton) findViewById(R.id.startCrowdTesting);
+        startCrowdTestingButton = (CircleButton) findViewById(R.id.startCrowdTesting);
 
         context = getApplicationContext();
         GlobalRef.applicationContext = context;
-        deviceId = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID) + "_" + Build.SERIAL;
+        deviceId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID) + "_" + Build.SERIAL;
 
         pb_2 = (PictureProgressBar) findViewById(R.id.pb_2);
 
         startCrowdTestingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(getApplicationContext(), "Start CrowdTesting, please wait for download...", Toast.LENGTH_LONG).show();
+                Toast.makeText(context, "Start CrowdTesting, please wait for download...", Toast.LENGTH_LONG).show();
+                textview.setText("Initializing...");
                 startCrowdTestingButton.setEnabled(false);
                 generatePatchAPK();
             }
         });
-        //setScheduleExecuteTime();
-        registerReceiver();
 
-        executeTestCases();
+        textview = (TextView) findViewById(R.id.textview);
+
+        //setScheduleExecuteTime();
+        registerReceiverForPatchUpgrade();
 
         //guide user to open AutoStartPermission
         guideUser2AutoStartPage();
 
+        executeTestCases();
     }
 
-    private void registerReceiver() {
+    private void registerReceiverForPatchUpgrade() {
         PatchUpgradeReceiver patchUpgradeReceiver = new PatchUpgradeReceiver();
         IntentFilter intentFilter = new IntentFilter();
         // 2. 设置接收广播的类型
@@ -149,16 +153,27 @@ public class MyActivity extends AppCompatActivity {
         intentFilter.addAction("com.finish.patch.downloadPatchAPK");
         // 3. 动态注册：调用Context的registerReceiver（）方法
         registerReceiver(patchUpgradeReceiver, intentFilter);
+        patchUpgradeReceiver.setOnUpdateUIListenner(new UpdateUIListenner() {
+            @Override
+            public void UpdateUI(int progress) {
+                pb_2.setProgress(progress);
+            }
+        });
+        patchUpgradeReceiver.setOnUpdateTextListenner(new UpdateTextListenner() {
+            @Override
+            public void UpdateText(String str) {
+                textview.setText(str);
+            }
+        });
     }
 
     public void executeTestCases() {
-        Context context = getApplicationContext();
         //execute test cases if patch is succeffully installed
         Tinker tinker = Tinker.with(context);
         System.out.println("=============================[tinker.isTinkerLoaded():]" + tinker.isTinkerLoaded());
         if (tinker.isTinkerLoaded()) {
-            Toast.makeText(getApplicationContext(), "Start run test cases", Toast.LENGTH_LONG).show();
-            pb_2.setProgress(1);
+            textview.setText("Running test cases...");
+            Toast.makeText(context, "Start run test cases", Toast.LENGTH_LONG).show();
             System.out.println("=============================[Start run test cases]");
             //step1. collect all test cases from DexFile
             List<String> allTestCaseClasses = new ArrayList<>();
@@ -166,22 +181,10 @@ public class MyActivity extends AppCompatActivity {
 //            allTestCaseClasses.addAll(DexUtils.findClassesEndWith(secondTestEndfix));
             allTestCaseClasses.addAll(DexUtils.findClassesStartWith(testCasePrefix));
 
-            System.out.println("=============================allTestCaseClasses："+allTestCaseClasses.size());
-
-            //exclude tests from third party libraries
-            List<String> avaliableTestCaseClasses = new ArrayList<>();
-            if(CollectionUtils.isNotEmpty(allTestCaseClasses)){
-                for(String s : allTestCaseClasses){
-                    if(!s.startsWith("org.")){
-                        avaliableTestCaseClasses.add(s);
-                    }
-                }
-            }
-
             //step2. execute test cases
-            executeTests(avaliableTestCaseClasses);
-            pb_2.setProgress(100);
-            Toast.makeText(getApplicationContext(), "Test run is finished", Toast.LENGTH_LONG).show();
+            executeTests(allTestCaseClasses);
+            Toast.makeText(context, "Test run is finished", Toast.LENGTH_LONG).show();
+            textview.setText("Finished!");
         }
 
         System.out.println("=============================[start cleanPatch]");
@@ -202,8 +205,7 @@ public class MyActivity extends AppCompatActivity {
                 int progress = (int) (count * 1.0f / totalTestNum * 100);
                 pb_2.setProgress(progress);
             } catch (Exception e) {
-                System.out.println(e.getMessage());
-                System.out.println("==========================Test Case Exception==========================" + testCaseClass);
+                System.out.println("==========================Test Case Exception==========================" + testCaseClass +e.getMessage());
                 continue;
             }
         }
@@ -212,13 +214,10 @@ public class MyActivity extends AppCompatActivity {
 
     public void executeSingelTest(final String testCaseClass) throws Exception {
         Class c = Class.forName(testCaseClass);
-        System.out.println("==============c============"+c.getName());
 
         TestClassFile testClassFile = resolveTestClass(c);
-        System.out.println("=============================testClassFile====================="+testClassFile.getC().toString());
 
         if (CollectionUtils.isEmpty(testClassFile.getTestMethodList())) {
-            System.out.println("=============================getTestMethodList Empty=====================");
             return;
         }
         for (Method method : testClassFile.getTestMethodList()) {
@@ -240,7 +239,6 @@ public class MyActivity extends AppCompatActivity {
                         //test
                         method.setAccessible(true);
                         method.invoke(o);
-                        System.out.println("=============================method invoke====================="+method.getName());
 
                         //after
                         if (testClassFile.isHasAfter()) {
@@ -379,7 +377,7 @@ public class MyActivity extends AppCompatActivity {
         pb_2.setPicture(R.drawable.runningcow);
         pb_2.setProgress(30);
 
-        DeviceInfo deviceInfo = new DeviceInfo(getApplicationContext());
+        DeviceInfo deviceInfo = new DeviceInfo(context);
         deviceInfo.setDeviceId(deviceId);
 
         OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS)
@@ -442,68 +440,6 @@ public class MyActivity extends AppCompatActivity {
         System.out.println("=============================[end sendBroadcast downloadPatchAPK]");
     }
 
-    private void askForRequiredPermissions() {
-        if (Build.VERSION.SDK_INT < 23) {
-            return;
-        }
-        if (!hasRequiredPermissions()) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
-        }
-    }
-
-    private boolean hasRequiredPermissions() {
-        if (Build.VERSION.SDK_INT >= 16) {
-            final int res = ContextCompat.checkSelfPermission(this.getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE);
-            return res == PackageManager.PERMISSION_GRANTED;
-        } else {
-            // When SDK_INT is below 16, READ_EXTERNAL_STORAGE will also be granted if WRITE_EXTERNAL_STORAGE is granted.
-            final int res = ContextCompat.checkSelfPermission(this.getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
-            return res == PackageManager.PERMISSION_GRANTED;
-        }
-    }
-
-    public boolean showInfo(Context context) {
-        // add more Build Info
-        final StringBuilder sb = new StringBuilder();
-        Tinker tinker = Tinker.with(getApplicationContext());
-        if (tinker.isTinkerLoaded()) {
-            sb.append(String.format("[patch is loaded] \n"));
-            sb.append(String.format("[buildConfig TINKER_ID] %s \n", BuildInfo.TINKER_ID));
-            sb.append(String.format("[buildConfig BASE_TINKER_ID] %s \n", BaseBuildInfo.BASE_TINKER_ID));
-
-            sb.append(String.format("[buildConfig MESSSAGE] %s \n", BuildInfo.MESSAGE));
-            sb.append(String.format("[TINKER_ID] %s \n", tinker.getTinkerLoadResultIfPresent().getPackageConfigByName(ShareConstants.TINKER_ID)));
-            sb.append(String.format("[packageConfig patchMessage] %s \n", tinker.getTinkerLoadResultIfPresent().getPackageConfigByName("patchMessage")));
-            sb.append(String.format("[TINKER_ID Rom Space] %d k \n", tinker.getTinkerRomSpace()));
-
-        } else {
-            sb.append(String.format("[patch is not loaded] \n"));
-            sb.append(String.format("[buildConfig TINKER_ID] %s \n", BuildInfo.TINKER_ID));
-            sb.append(String.format("[buildConfig BASE_TINKER_ID] %s \n", BaseBuildInfo.BASE_TINKER_ID));
-
-            sb.append(String.format("[buildConfig MESSSAGE] %s \n", BuildInfo.MESSAGE));
-            sb.append(String.format("[TINKER_ID] %s \n", ShareTinkerInternals.getManifestTinkerID(getApplicationContext())));
-        }
-        sb.append(String.format("[BaseBuildInfo Message] %s \n", BaseBuildInfo.TEST_MESSAGE));
-
-        final TextView v = new TextView(context);
-        v.setText(sb);
-        v.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        v.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10);
-        v.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        v.setTextColor(0xFF000000);
-        v.setTypeface(Typeface.MONOSPACE);
-        final int padding = 16;
-        v.setPadding(padding, padding, padding, padding);
-
-        final AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setCancelable(true);
-        builder.setView(v);
-        final AlertDialog alert = builder.create();
-        alert.show();
-        return true;
-    }
-
     private void guideUser2AutoStartPage() {
         //创建对象
         final MySharedPreferences.SharedPreferencesUtil sharedPreferencesUtil = MySharedPreferences.SharedPreferencesUtil.getInstance(this);
@@ -511,7 +447,7 @@ public class MyActivity extends AppCompatActivity {
         boolean isFirst = (boolean) sharedPreferencesUtil.getData(GlobalRef.IS_FIRST_START, true);
         if (isFirst) {
             sharedPreferencesUtil.saveData(GlobalRef.IS_FIRST_START, false);
-            Toast.makeText(getApplicationContext(), "Please enable Auto Start Permission", Toast.LENGTH_LONG).show();
+            Toast.makeText(context, "Please enable Auto Start Permission", Toast.LENGTH_LONG).show();
             AutoStartPermissionHelper.getInstance().getAutoStartPermission(context);
             System.out.println("isAutoStartPermissionAvailable :" + AutoStartPermissionHelper.getInstance().isAutoStartPermissionAvailable(context));
         }
