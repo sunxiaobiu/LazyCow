@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/FIT4003 Research project-LazyCow.iml" filepath="$PROJECT_DIR$/.idea/modules/FIT4003 Research project-LazyCow.iml" group="LazyCow" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/LazyCow.iml" filepath="$PROJECT_DIR$/.idea/modules/LazyCow.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/crowdtestinglibrary/LazyCow-crowdtestinglibrary.iml" filepath="$PROJECT_DIR$/.idea/modules/crowdtestinglibrary/LazyCow-crowdtestinglibrary.iml" group="LazyCow/crowdtestinglibrary" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/LazyCow.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/LazyCow.app.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/app.iml" group="LazyCow/app" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/crowdtestinglibrary/crowdtestinglibrary.iml" filepath="$PROJECT_DIR$/.idea/modules/crowdtestinglibrary/crowdtestinglibrary.iml" group="LazyCow/crowdtestinglibrary" />
