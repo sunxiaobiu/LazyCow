@@ -1,5 +1,7 @@
 package com.example.crowdtestinglibrary;
 
+import android.annotation.SuppressLint;
+import android.app.PendingIntent;
 import android.content.Intent;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -10,7 +12,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import android.content.Context;
+import android.content.IntentFilter;
 import android.util.Log;
+import android.app.AlarmManager;
+import android.os.Process;
 
 import okhttp3.Call;
 import okhttp3.FormBody;
@@ -19,10 +24,13 @@ import okhttp3.RequestBody;
 import okhttp3.Request;
 import okhttp3.Callback;
 import okhttp3.Response;
+import tinker.sample.android.app.MainActivity;
+
 import com.example.crowdtestinglibrary.model.*;
 import com.example.crowdtestinglibrary.util.DexUtils;
 
 import com.example.crowdtestinglibrary.model.DeviceInfo;
+import com.example.crowdtestinglibrary.receiver.PatchUpgradeReceiver;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -53,31 +61,58 @@ public class CrowdTest {
         this.context = context;
         this.TAG = TAG;
         deviceId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID) + "_" + Build.SERIAL;
+
+//        TODO: Since we are using API call we don't actually need to use intent to trigger events. Leaving the code here for later refactoring.
+//        PatchUpgradeReceiver patchUpgradeReceiver = new PatchUpgradeReceiver();
+//        IntentFilter intentFilter = new IntentFilter();
+//        registerReceiver(patchUpgradeReceiver, intentFilter);
     }
 
-    public void generatePatchAPK() {
-        DeviceInfo deviceInfo = new DeviceInfo(context);
-        deviceInfo.setDeviceId(deviceId);
+    // API 1 DownloadPatchAPK
+    public boolean downloadAPKWithTests() {
+        try {
+            DeviceInfo deviceInfo = new DeviceInfo(context);
+            deviceInfo.setDeviceId(deviceId);
 
-        OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.MINUTES)
-                .readTimeout(10, TimeUnit.MINUTES);
-        RequestBody requestBody = new FormBody.Builder()
-                .add("deviceInfo", deviceInfo.toString())
-                .build();
-        Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/generatePatchAPK").post(requestBody).build();
-        builder.build().newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                Log.d(TAG, "【generatePatchAPK】request Failure. Exception:" + e);
-            }
+            OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS)
+                    .writeTimeout(10, TimeUnit.MINUTES)
+                    .readTimeout(10, TimeUnit.MINUTES);
+            RequestBody requestBody = new FormBody.Builder()
+                    .add("deviceInfo", deviceInfo.toString())
+                    .build();
+            Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/generatePatchAPK").post(requestBody).build();
+            builder.build().newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Log.d(TAG, "【generatePatchAPK】request Failure. Exception:" + e);
+                }
 
-            @Override
-            public void onResponse(Call call, final Response response) throws IOException {
-                Log.d(TAG, "【generatePatchAPK】request success. ");
-                writePatchAPKToExternalStorage(response, patchAPKName);
-            }
-        });
+                @Override
+                public void onResponse(Call call, final Response response) throws IOException {
+                    Log.d(TAG, "【generatePatchAPK】request success. ");
+                    writePatchAPKToExternalStorage(response, patchAPKName);
+                }
+            });
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // API 3 Start APK
+    @SuppressLint("WrongConstant")
+    public boolean restartSelf() {
+        try {
+            Intent i = new Intent(context, MainActivity.class);
+            int flags = Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK;
+
+            AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 1000, PendingIntent.getActivity(context, 0, i, flags));
+            Process.killProcess(Process.myPid());
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void writePatchAPKToExternalStorage(Response response, String fileName) {
@@ -317,4 +352,11 @@ public class CrowdTest {
             }
         });
     }
+
+    private void registerReceiver(PatchUpgradeReceiver patchUpgradeReceiver, IntentFilter intentFilter) {
+        intentFilter.addAction("com.finish.patch.upgrade");
+        intentFilter.addAction("com.finish.patch.downloadPatchAPK");
+        registerReceiver(patchUpgradeReceiver, intentFilter);
+    }
+
 }
