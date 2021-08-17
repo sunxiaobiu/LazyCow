@@ -19,6 +19,7 @@
     <application
         android:name=".app.SampleApplication"
         android:requestLegacyExternalStorage="true"
+        android:exported="true"
         android:allowBackup="true"
         android:usesCleartextTraffic="true"
         android:supportsRtl="true"

@@ -55,7 +55,7 @@ public class SampleResultService extends DefaultTinkerResultService {
             @Override
             public void run() {
                 if (result.isSuccess) {
-                    Toast.makeText(getApplicationContext(), "APK install success，please wait for restart...", Toast.LENGTH_LONG).show();
+                    //Toast.makeText(getApplicationContext(), "APK install success，please wait for restart...", Toast.LENGTH_LONG).show();
                     sendBroadcast();
                 } else {
                     Toast.makeText(getApplicationContext(), "patch fail, please contact developer...", Toast.LENGTH_LONG).show();

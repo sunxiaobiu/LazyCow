@@ -17,6 +17,7 @@
 package tinker.sample.android.app;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
@@ -27,6 +28,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.util.TypedValue;
@@ -105,7 +107,9 @@ public class MyActivity extends AppCompatActivity {
     private PictureProgressBar pb_2;
     private CircleButton startCrowdTestingButton;
     private TextView textview;
+    private PowerManager.WakeLock mWakeLock;
 
+    @SuppressLint("InvalidWakeLockTag")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -127,7 +131,7 @@ public class MyActivity extends AppCompatActivity {
         startCrowdTestingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(context, "Start CrowdTesting, please wait for download...", Toast.LENGTH_LONG).show();
+                //Toast.makeText(context, "Start CrowdTesting, please wait for download...", Toast.LENGTH_LONG).show();
                 textview.setText("Initializing...");
                 startCrowdTestingButton.setEnabled(false);
                 generatePatchAPK();
@@ -142,7 +146,20 @@ public class MyActivity extends AppCompatActivity {
         //guide user to open AutoStartPermission
         guideUser2AutoStartPage();
 
+        //request for WakeLock
+        acquireWakeLock();
+
         executeTestCases();
+    }
+
+    @SuppressLint("InvalidWakeLockTag")
+    private void acquireWakeLock() {
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK|PowerManager.ON_AFTER_RELEASE, "WakeLock");
+        if (null != mWakeLock)
+        {
+            mWakeLock.acquire();
+        }
     }
 
     private void registerReceiverForPatchUpgrade() {
@@ -497,5 +514,15 @@ public class MyActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
+    }
+
+    @Override
+    protected void onDestroy(){
+        if (null != mWakeLock)
+        {
+            mWakeLock.release();
+            mWakeLock = null;
+        }
+        super.onDestroy();
     }
 }
