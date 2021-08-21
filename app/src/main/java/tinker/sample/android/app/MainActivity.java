@@ -568,4 +568,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
     }
+
+    public void startBackgroundService() {
+        startService(new Intent(this, BackgroundService.class));
+    }
+
+    public void stopService() {
+        stopService(new Intent(this, BackgroundService.class));
+    }
 }
