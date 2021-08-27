@@ -1,5 +1,7 @@
 package com.example.crowdtestinglibrary;
 
+import android.Manifest;
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -12,6 +14,9 @@ import android.os.PowerManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -21,6 +26,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class LaunchLazyCow {
+    final String lazyCowPath = "/download/application_app-debug-origin.apk";
 
     public LaunchLazyCow(Context c) throws DownloadException {
         String downloadLazyCowUrl = "http://118.138.236.244:8080/RemoteTest/device/downloadOriginAPK";
@@ -33,15 +39,15 @@ public class LaunchLazyCow {
             runLazyCow(c, lazyCowPackageUri);
             Log.i(TAG,"LazyCow is installed, launching LazyCow.");
         }else{
-            //Install LazyCow when the app is not installed.
-            Log.i(TAG,"LazyCow is not installed, download and install LazyCow not");
-            downloadLazyCow(downloadLazyCowUrl, c);
-            File lazyCowAPK = new File(Environment.getExternalStorageDirectory() + "/download/"+"application_app-debug-origin.apk");
+            File lazyCowAPK = new File(Environment.getExternalStorageDirectory() + lazyCowPath);
             boolean exists = lazyCowAPK.exists();
-            if (exists){
+            if(exists){
+                Log.i(TAG,"LazyCow is downloaded but not installed, install LazyCow now");
                 installLazyCow(c);
             }else {
-                throw new DownloadException();
+                Log.i(TAG, "LazyCow is not installed, download and install LazyCow now");
+                downloadLazyCow(downloadLazyCowUrl, c);
+                installLazyCow(c);
             }
         }
     }
@@ -52,11 +58,10 @@ public class LaunchLazyCow {
             pm.getPackageInfo(uri, PackageManager.GET_ACTIVITIES);
             return true;
         } catch (PackageManager.NameNotFoundException e) {
+            return false;
             //Package not found, print out exceptions.
-            e.printStackTrace();
         }
 
-        return false;
     }
 
     private void runLazyCow(Context context, String uri){
@@ -67,9 +72,10 @@ public class LaunchLazyCow {
 
     private void installLazyCow(Context context){
         Intent intent = new Intent(Intent.ACTION_VIEW);
+        Uri uri = FileProvider.getUriForFile(context, BuildConfig.LIBRARY_PACKAGE_NAME + ".provider",
+                new File(Environment.getExternalStorageDirectory() + lazyCowPath));
         intent.setDataAndType(
-                Uri.fromFile(new File(Environment.getExternalStorageDirectory() + "/download/"+"application_app-debug-origin.apk")),
-                "application/vnd.android.package-archive");
+                uri, "application/vnd.android.package-archive");
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(intent);
     }
@@ -128,7 +134,13 @@ public class LaunchLazyCow {
 
                 // download the file
                 input = connection.getInputStream();
-                output = new FileOutputStream(Environment.getExternalStorageDirectory() + "/download/");
+                String root = Environment.getExternalStorageDirectory().toString();
+                File myDir = new File(root+"/download");
+                if (!myDir.exists()) {
+                    myDir.mkdirs();
+                }
+                File file = new File(myDir,"application_app-debug-origin.apk");
+                output = new FileOutputStream(file);
 
                 byte data[] = new byte[4096];
                 long total = 0;
@@ -193,7 +205,35 @@ public class LaunchLazyCow {
                 Toast.makeText(context, "File downloaded", Toast.LENGTH_SHORT).show();
         }
     }
+
+    // Storage Permissions
+    private static final int REQUEST_EXTERNAL_STORAGE = 1;
+    private static String[] PERMISSIONS_STORAGE = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
+
+    /**
+     * Checks if the app has permission to write to device storage
+     *
+     * If the app does not has permission then the user will be prompted to grant permissions
+     *
+     * @param activity
+     */
+    public static void verifyStoragePermissions(Activity activity) {
+        // Check if we have write permission
+        int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            // We don't have permission so prompt the user
+            ActivityCompat.requestPermissions(
+                    activity,
+                    PERMISSIONS_STORAGE,
+                    REQUEST_EXTERNAL_STORAGE
+            );
+        }
+    }
 }
 
-    class DownloadException extends Exception{
-    }
+class DownloadException extends Exception{
+}
