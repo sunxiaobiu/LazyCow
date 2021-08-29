@@ -47,6 +47,13 @@
                 <action android:name="com.finish.patch.downloadPatchAPK" />
             </intent-filter>
         </receiver>
+        <receiver  android:name=".receiver.LazyCowLibBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.lazy.cow.library.executeTests" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

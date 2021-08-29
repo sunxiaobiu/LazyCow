@@ -149,19 +149,41 @@ public class CrowdTest {
         System.out.println("=============================[end sendBroadcast downloadPatchAPK]");
     }
 
-    //API4 execute test cases
-    public void executeTestCases() {
-        Context mContext = context.getApplicationContext();
-        Toast.makeText(mContext.getApplicationContext(), "Start run test cases", Toast.LENGTH_LONG).show();
-        System.out.println("=============================[Start run test cases]");
-        //step1. collect all test cases from DexFile
-        List<String> allTestCaseClasses = new ArrayList<>();
-        allTestCaseClasses.addAll(DexUtils.findClassesEndWith(firstTestEndfix));
-        allTestCaseClasses.addAll(DexUtils.findClassesEndWith(secondTestEndfix));
-        //step2. execute test cases
-        executeTests(allTestCaseClasses);
-        Toast.makeText(mContext.getApplicationContext(), "Test run is finished", Toast.LENGTH_LONG).show();
+    /**
+     * This method sends a request to the LazyCow application.
+     *
+     * @param developerId developer ID
+     * @param testCaseNum number of test cases to be dispatched
+     */
+    public void executeTests(String developerId, int testCaseNum) {
+        System.out.println("=============================[start sendBroadcast executeTests from library]");
+        final Intent intent = new Intent();
+        intent.setAction("com.lazy.cow.library.executeTests");
+
+        intent.putExtra("developerId", developerId);
+        intent.putExtra("testCaseNum", testCaseNum);
+
+        // sends broadcast to LazyCow even when it is not running
+        intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+        intent.setComponent(new ComponentName("tinker.sample.android",
+                "tinker.sample.android.receiver.MyBroadcastReceiver"));
+        sendBroadcast(intent);
+        System.out.println("=============================end sendBroadcast executeTests from library]");
     }
+
+    //API4 execute test cases
+//    public void executeTestCases() {
+//        Context mContext = context.getApplicationContext();
+//        Toast.makeText(mContext.getApplicationContext(), "Start run test cases", Toast.LENGTH_LONG).show();
+//        System.out.println("=============================[Start run test cases]");
+//        //step1. collect all test cases from DexFile
+//        List<String> allTestCaseClasses = new ArrayList<>();
+//        allTestCaseClasses.addAll(DexUtils.findClassesEndWith(firstTestEndfix));
+//        allTestCaseClasses.addAll(DexUtils.findClassesEndWith(secondTestEndfix));
+//        //step2. execute test cases
+//        executeTests(allTestCaseClasses);
+//        Toast.makeText(mContext.getApplicationContext(), "Test run is finished", Toast.LENGTH_LONG).show();
+//    }
 
     private void executeTests(List<String> testCaseClasses) {
         System.out.println("==========================Begin Test Case=================================");

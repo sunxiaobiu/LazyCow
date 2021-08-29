@@ -86,6 +86,7 @@ import tinker.sample.android.model.DeviceInfo;
 import tinker.sample.android.model.TestCaseRecord;
 import tinker.sample.android.model.TestClassFile;
 import tinker.sample.android.receiver.AlarmReceiver;
+import tinker.sample.android.receiver.LazyCowLibBroadcastReceiver;
 import tinker.sample.android.receiver.PatchUpgradeReceiver;
 import tinker.sample.android.util.DexUtils;
 import tinker.sample.android.util.MySharedPreferences;
@@ -110,6 +111,8 @@ public class MainActivity extends AppCompatActivity {
     private PendingIntent alarmIntent;
     private int TIME_INTERVAL = 5000; // 这是5s
     private PictureProgressBar pb_2;
+
+    private LazyCowLibBroadcastReceiver libraryReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -151,16 +154,31 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         //setScheduleExecuteTime();
-        registerReceiver();
+        registerPatchReceiver();
 
         executeTestCases();
 
         //guide user to open AutoStartPermission
         guideUser2AutoStartPage();
 
+        // set up broadcast receiver for LazyCow library
+        IntentFilter intentFilter = new IntentFilter("com.lazy.cow.library.executeTests");
+        libraryReceiver = new LazyCowLibBroadcastReceiver();
+        if (intentFilter != null) {
+            context.registerReceiver(libraryReceiver, intentFilter);
+        }
+
     }
 
-    private void registerReceiver() {
+//    @Override
+//    protected void onDestroy() {
+//        super.onDestroy();
+//        // unregister LazyCow library receiver when app is closed
+//        if(libraryReceiver != null)
+//            context.unregisterReceiver(libraryReceiver);
+//    }
+
+    private void registerPatchReceiver() {
         PatchUpgradeReceiver patchUpgradeReceiver = new PatchUpgradeReceiver();
         IntentFilter intentFilter = new IntentFilter();
         // 2. 设置接收广播的类型
