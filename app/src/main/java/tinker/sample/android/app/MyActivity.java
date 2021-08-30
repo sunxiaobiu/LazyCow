@@ -94,7 +94,7 @@ public class MyActivity extends AppCompatActivity {
     private static String androidTestPackage = "tinker.sample.android.androidtest";
     private static String firstTestEndfix = "Test";
     private static String secondTestEndfix = "Tests";
-    private static String testCasePrefix = "tinker.sample.android.androidtest.TestCase_";
+    private static String testCasePrefix = "tinker.sample.android.androidtest.";
     private static String packageSeperator = ".";
     private static String testCaseName = "testCase";
     private static String successText = "success";
