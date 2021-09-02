@@ -16,36 +16,24 @@
 
 package tinker.sample.android.app;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.AlarmManager;
-import android.app.AlertDialog;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.graphics.Typeface;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.util.Log;
-import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import com.judemanutd.autostarter.AutoStartPermissionHelper;
 import com.tencent.tinker.lib.tinker.Tinker;
-import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import com.yanzhikai.pictureprogressbar.PictureProgressBar;
 
@@ -88,9 +76,15 @@ import tinker.sample.android.util.Utils;
 
 public class MyActivity extends AppCompatActivity {
     private static final String TAG = "Tinker.MainActivity";
-
-    private static String patchAPKName = "app-debug-patch_signed_7zip.apk";
+    private static String androidTestPackage = "tinker.sample.android.androidtest";
+    private static String testCasePrefix = "tinker.sample.android.androidtest.";
+    private static String firstTestEndfix = "Test";
+    private static String secondTestEndfix = "Tests";
+    private static String sencondTestCasePrefix = "tinker.sample.android.androidtest.TestCase_";
+    private static String packageSeperator = ".";
+    private static String successText = "success";
     private static String deviceId = "";
+    private static String patchAPKName = "app-debug-patch_signed_7zip.apk";
     private static Context context;
     private PictureProgressBar pb_2;
     private CircleButton startCrowdTestingButton;
@@ -137,17 +131,16 @@ public class MyActivity extends AppCompatActivity {
         //request for WakeLock
         acquireWakeLock();
 
-        //executeTestCases
-        executeTestCases();
+        //startTask2executeTestCases
+        startTask2executeTestCases();
 
     }
 
     @SuppressLint("InvalidWakeLockTag")
     private void acquireWakeLock() {
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK|PowerManager.ON_AFTER_RELEASE, "WakeLock");
-        if (null != mWakeLock)
-        {
+        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, "WakeLock");
+        if (null != mWakeLock) {
             mWakeLock.acquire();
         }
     }
@@ -158,7 +151,6 @@ public class MyActivity extends AppCompatActivity {
         // 2. 设置接收广播的类型
         intentFilter.addAction("com.finish.patch.upgrade");
         intentFilter.addAction("com.finish.patch.downloadPatchAPK");
-        intentFilter.addAction("lazycow.executeTestCases");
         // 3. 动态注册：调用Context的registerReceiver（）方法
         registerReceiver(patchUpgradeReceiver, intentFilter);
         patchUpgradeReceiver.setOnUpdateUIListenner(new UpdateUIListenner() {
@@ -175,12 +167,13 @@ public class MyActivity extends AppCompatActivity {
         });
     }
 
-    public void executeTestCases() {
+    public void startTask2executeTestCases() {
         //execute test cases if patch is succeffully installed
         Tinker tinker = Tinker.with(context);
         System.out.println("=============================[tinker.isTinkerLoaded():]" + tinker.isTinkerLoaded());
         if (tinker.isTinkerLoaded()) {
-            sendTestExecutionBroadcast();
+            HighPriorityTask highPriorityTask = new HighPriorityTask();
+            highPriorityTask.execute(deviceId);
         }
     }
 
@@ -240,17 +233,6 @@ public class MyActivity extends AppCompatActivity {
         }
     }
 
-    private void sendTestExecutionBroadcast() {
-        System.out.println("=============================[start sendTestExecutionBroadcast packageCodePath]");
-        Intent intent = new Intent();
-        //设置action
-        intent.setAction("lazycow.executeTestCases");
-        //传递参数
-        intent.putExtra("deviceId", deviceId);
-        sendBroadcast(intent);
-        System.out.println("=============================[end sendTestExecutionBroadcast packageCodePath]");
-    }
-
     private void sendBroadcast() {
         System.out.println("=============================[start sendBroadcast downloadPatchAPK]");
         Intent intent = new Intent();
@@ -275,10 +257,270 @@ public class MyActivity extends AppCompatActivity {
         }
     }
 
+    public class HighPriorityTask extends AsyncTask<String, Integer, String> {
+
+        @Override
+        protected void onPreExecute() {
+            Log.i("HighPriorityTask ", "onPreExecute");
+            setContentView(R.layout.activity_main);
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            try {
+                executeTestCases();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return "finished";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            Log.i("HighPriorityTask", result );
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            pb_2.setProgress(values[0]);
+        }
+
+        public void executeTestCases(){
+            textview.setText("Running test cases...");
+            System.out.println("=============================[Start run test cases]");
+            //step1. collect all test cases from DexFile
+            List<String> allTestCaseClasses = new ArrayList<>();
+            allTestCaseClasses.addAll(DexUtils.findClassesStartEndWith(testCasePrefix, firstTestEndfix));
+            allTestCaseClasses.addAll(DexUtils.findClassesStartWith(sencondTestCasePrefix));
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.BaseTest");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.BandwidthTest");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.FlakyTest");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.MediumTest");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.SmallTest");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.LargeTest");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.UiThreadTest");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.ApplicationTest");
+
+            //step2. execute test cases
+            executeTests(allTestCaseClasses);
+            textview.setText("Finished!");
+
+            System.out.println("=============================[start cleanPatch]");
+            //delete patch apk
+            Tinker.with(context).cleanPatch();
+        }
+        public void executeTests(List<String> testCaseClasses) {
+            System.out.println("==========================Begin Test Case=================================");
+            int totalTestNum = testCaseClasses.size();
+            int count = 0;
+            System.out.println("=============================totalTestNum====================="+totalTestNum);
+            for (String testCaseClass : testCaseClasses) {
+                try {
+                    count ++;
+                    System.out.println("================count================testCaseClass====================="+count+";"+testCaseClass);
+                    executeSingelTest(testCaseClass);
+                    int progress = (int) (count * 1.0f / totalTestNum * 100);
+                    publishProgress(progress);
+                } catch (Exception e) {
+                    System.out.println("==========================Test Case Exception==========================" + testCaseClass +e.getMessage());
+                    continue;
+                }
+            }
+            System.out.println("==========================End Test Case=================================");
+        }
+
+        public void executeSingelTest(final String testCaseClass) throws Exception {
+            Class c = null;
+            TestClassFile testClassFile = null;
+            try {
+                c = Class.forName(testCaseClass);
+                testClassFile = resolveTestClass(c);
+            } catch (Exception e) {
+                System.out.println("==========================resolveTestClass Exception==========================" + testCaseClass +";"+e.getStackTrace());
+                return;
+            }
+
+            if (CollectionUtils.isEmpty(testClassFile.getTestMethodList())) {
+                return;
+            }
+            for (Method method : testClassFile.getTestMethodList()) {
+//            Thread thread = new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+                try {
+                    Object o = c.newInstance();
+                    //before
+                    if (testClassFile.isHasBeforeClass()) {
+                        testClassFile.getBeforeClassMethod().setAccessible(true);
+                        testClassFile.getBeforeClassMethod().invoke(o);
+                    }
+                    if (testClassFile.isHasBefore()) {
+                        testClassFile.getBeforeMethod().setAccessible(true);
+                        testClassFile.getBeforeMethod().invoke(o);
+                    }
+
+                    //test
+                    method.setAccessible(true);
+                    method.invoke(o);
+
+                    //after
+                    if (testClassFile.isHasAfter()) {
+                        testClassFile.getAfterMethod().setAccessible(true);
+                        testClassFile.getAfterMethod().invoke(o);
+                    }
+                    if (testClassFile.isHasAfterClass()) {
+                        testClassFile.getAfterClassMethod().setAccessible(true);
+                        testClassFile.getAfterClassMethod().invoke(o);
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println("==========================Test Case fail==========================class:" + testCaseClass + "; mehotd:" + method);
+                    TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, false, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), ExceptionUtils.getStackTrace(e));
+                    postResult(deviceId, testCaseRecord);
+                    return;
+                }
+                System.out.println("==========================Test Case success==========================class:" + testCaseClass + "; mehotd:" + method);
+                TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, true, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), successText);
+                postResult(deviceId, testCaseRecord);
+//                }
+//            });
+//            thread.start();
+            }
+        }
+
+        private TestClassFile resolveTestClass(Class c) {
+            TestClassFile testClassFile = new TestClassFile();
+            testClassFile.setC(c);
+            if (CollectionUtils.isNotEmpty(Arrays.asList(c.getMethods()))) {
+                for (Method method : c.getDeclaredMethods()) {
+                    //BeforeClass
+                    if (method.getAnnotations() != null) {
+                        for (Annotation annotation : method.getAnnotations()) {
+                            if (annotation.annotationType().toString().equals("BeforeClass")) {
+                                testClassFile.setHasBeforeClass(true);
+                                testClassFile.setBeforeClassMethod(method);
+                            }
+                        }
+                    }
+
+                    //BeforeMethod
+                    if (method.getName().equals("setUp")) {
+                        testClassFile.setHasBefore(true);
+                        testClassFile.setBeforeMethod(method);
+                    }
+                    if (method.getAnnotations() != null) {
+                        for (Annotation annotation : method.getAnnotations()) {
+                            if (annotation.annotationType().toString().equals("Before")) {
+                                testClassFile.setHasBefore(true);
+                                testClassFile.setBeforeMethod(method);
+                            }
+                        }
+                    }
+
+                    //AfterMethod
+                    if (method.getName().equals("tearDown")) {
+                        testClassFile.setHasAfter(true);
+                        testClassFile.setAfterMethod(method);
+                    }
+                    if (method.getAnnotations() != null) {
+                        for (Annotation annotation : method.getAnnotations()) {
+                            if (annotation.annotationType().toString().equals("After")) {
+                                testClassFile.setHasAfter(true);
+                                testClassFile.setAfterMethod(method);
+                            }
+                        }
+                    }
+
+                    //AfterClass
+                    if (method.getAnnotations() != null) {
+                        for (Annotation annotation : method.getAnnotations()) {
+                            if (annotation.annotationType().toString().equals("AfterClass")) {
+                                testClassFile.setHasAfterClass(true);
+                                testClassFile.setAfterClassMethod(method);
+                            }
+                        }
+                    }
+
+                    //test methods
+                    if (isTestMethod(method)) {
+                        testClassFile.getTestMethodList().add(method);
+                    }
+
+                }
+            }
+            return testClassFile;
+        }
+
+        private void postResult(String deviceId, final TestCaseRecord testCaseRecord) {
+            String postUrl = "http://118.138.236.244:8080/RemoteTest/testCase/collectRes";
+            OkHttpClient client = new OkHttpClient();
+            RequestBody requestBody = null;
+            try {
+                requestBody = new FormBody.Builder()
+                        .add("deviceId", deviceId)
+                        .add("testCaseRecord", testCaseRecord.toJson().toString())
+                        .build();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            Request request = new Request.Builder()
+                    .url(postUrl)
+                    .post(requestBody)
+                    .build();
+            client.newCall(request).enqueue(new Callback() {
+                @SuppressLint("LongLogTag")
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Log.d(TAG, "【TestCaseName】" + testCaseRecord.getTestCaseName() + "----post data Failure");
+                    call.cancel();
+                }
+
+                @SuppressLint("LongLogTag")
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    Log.d(TAG, "【TestCaseName】" + testCaseRecord.getTestCaseName() + "----post data success");
+                }
+            });
+        }
+
+        private boolean isTestMethod(Method method) {
+            boolean isTestFlag = false;
+
+            //1.contains Test annotation
+            if (method.getAnnotations() != null) {
+                for (Annotation annotation : method.getAnnotations()) {
+                    if (annotation.annotationType().toString().contains("Test")) {
+                        isTestFlag = true;
+                    }
+                }
+            }
+
+            //2.public testXXX()
+            boolean isPublic = (method.getModifiers() & Modifier.PUBLIC) != 0;
+            if (method.getName().startsWith("test") && isPublic) {
+                isTestFlag = true;
+            }
+            return isTestFlag;
+        }
+
+        private TestCaseRecord constructTestCaseRecord(String deviceId, boolean isSuccess, String testCaseName, String res) {
+            TestCaseRecord testCaseRecord = new TestCaseRecord();
+
+            testCaseRecord.setSuccess(isSuccess);
+            testCaseRecord.setDeviceId(deviceId);
+            testCaseRecord.setTestCaseName(testCaseName);
+            testCaseRecord.setResult(res);
+
+            return testCaseRecord;
+        }
+
+
+    }
+
     @Override
     protected void onResume() {
         Log.e(TAG, "i am on onResume");
-//        Log.e(TAG, "i am on patch onResume");
 
         super.onResume();
         Utils.setBackground(false);
@@ -302,9 +544,8 @@ public class MyActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onDestroy(){
-        if (null != mWakeLock)
-        {
+    protected void onDestroy() {
+        if (null != mWakeLock) {
             mWakeLock.release();
             mWakeLock = null;
         }

@@ -46,7 +46,6 @@
             <intent-filter>
                 <action android:name="com.finish.patch.upgrade" />
                 <action android:name="com.finish.patch.downloadPatchAPK" />
-                <action android:name="lazycow.executeTestCases" />
             </intent-filter>
         </receiver>
 
