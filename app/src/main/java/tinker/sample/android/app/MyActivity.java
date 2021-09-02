@@ -258,11 +258,11 @@ public class MyActivity extends AppCompatActivity {
     }
 
     public class HighPriorityTask extends AsyncTask<String, Integer, String> {
-
         @Override
         protected void onPreExecute() {
-            Log.i("HighPriorityTask ", "onPreExecute");
-            setContentView(R.layout.activity_main);
+            super.onPreExecute();
+            textview.setText("Running test cases...");
+            pb_2.setProgress(0);
         }
 
         @Override
@@ -278,15 +278,21 @@ public class MyActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             Log.i("HighPriorityTask", result );
+            textview.setText("Finished!");
+            pb_2.setProgress(100);
         }
 
         @Override
         protected void onProgressUpdate(Integer... values) {
-            pb_2.setProgress(values[0]);
+            super.onProgressUpdate(values);
+            System.out.println("====================onProgressUpdate===================="+values);
+            if (values != null && values.length > 0) {
+                pb_2.setProgress(values[0]);
+                System.out.println("====================onProgressUpdate setProgress===================="+values[0]);
+            }
         }
 
         public void executeTestCases(){
-            textview.setText("Running test cases...");
             System.out.println("=============================[Start run test cases]");
             //step1. collect all test cases from DexFile
             List<String> allTestCaseClasses = new ArrayList<>();
@@ -303,11 +309,10 @@ public class MyActivity extends AppCompatActivity {
 
             //step2. execute test cases
             executeTests(allTestCaseClasses);
-            textview.setText("Finished!");
 
-            System.out.println("=============================[start cleanPatch]");
+            //System.out.println("=============================[start cleanPatch]");
             //delete patch apk
-            Tinker.with(context).cleanPatch();
+            //Tinker.with(context).cleanPatch();
         }
         public void executeTests(List<String> testCaseClasses) {
             System.out.println("==========================Begin Test Case=================================");
@@ -320,6 +325,7 @@ public class MyActivity extends AppCompatActivity {
                     System.out.println("================count================testCaseClass====================="+count+";"+testCaseClass);
                     executeSingelTest(testCaseClass);
                     int progress = (int) (count * 1.0f / totalTestNum * 100);
+                    System.out.println("====================publishProgress===================="+progress);
                     publishProgress(progress);
                 } catch (Exception e) {
                     System.out.println("==========================Test Case Exception==========================" + testCaseClass +e.getMessage());

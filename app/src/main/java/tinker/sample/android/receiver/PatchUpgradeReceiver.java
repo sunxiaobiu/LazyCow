@@ -35,6 +35,7 @@ import tinker.sample.android.app.MyActivity;
 import tinker.sample.android.model.TestCaseRecord;
 import tinker.sample.android.model.TestClassFile;
 import tinker.sample.android.util.DexUtils;
+import tinker.sample.android.util.RebirthHelper;
 
 public class PatchUpgradeReceiver extends BroadcastReceiver {
 
@@ -58,12 +59,8 @@ public class PatchUpgradeReceiver extends BroadcastReceiver {
 
             //restart self
             System.out.println("=============================[start restart self]");
-            Intent i = new Intent(context, MyActivity.class);
-            int flags = Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK;
+            RebirthHelper.doRestart(context);
 
-            AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-            mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 1, PendingIntent.getActivity(context, 0, i, flags));
-            android.os.Process.killProcess(android.os.Process.myPid());
         } else{
             throw new RuntimeException("【Unsupported Broadcast Action Type】");
         }
