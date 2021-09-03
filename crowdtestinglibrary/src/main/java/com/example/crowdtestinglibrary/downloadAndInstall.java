@@ -25,10 +25,10 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class LaunchLazyCow {
+public class downloadAndInstall {
     final String lazyCowPath = "/download/application_app-debug-origin.apk";
 
-    public LaunchLazyCow(Context c) throws DownloadException {
+    public downloadAndInstall(Context c) throws DownloadException {
         String downloadLazyCowUrl = "http://118.138.236.244:8080/RemoteTest/device/downloadOriginAPK";
         String lazyCowPackageUri = "tinker.sample.android";
         boolean isAppInstalled = appInstalledOrNot(c, lazyCowPackageUri);
@@ -41,14 +41,7 @@ public class LaunchLazyCow {
         }else{
             File lazyCowAPK = new File(Environment.getExternalStorageDirectory() + lazyCowPath);
             boolean exists = lazyCowAPK.exists();
-            if(exists){
-                Log.i(TAG,"LazyCow is downloaded but not installed, install LazyCow now");
-                installLazyCow(c);
-            }else {
-                Log.i(TAG, "LazyCow is not installed, download and install LazyCow now");
-                downloadLazyCow(downloadLazyCowUrl, c);
-                installLazyCow(c);
-            }
+            downloadLazyCow(downloadLazyCowUrl, c);
         }
     }
 
@@ -71,6 +64,7 @@ public class LaunchLazyCow {
     }
 
     private void installLazyCow(Context context){
+        Log.i("InstallLazyCow","Start Install Lazy Cow");
         Intent intent = new Intent(Intent.ACTION_VIEW);
         Uri uri = FileProvider.getUriForFile(context, BuildConfig.LIBRARY_PACKAGE_NAME + ".provider",
                 new File(Environment.getExternalStorageDirectory() + lazyCowPath));
@@ -82,7 +76,7 @@ public class LaunchLazyCow {
 
     private void downloadLazyCow(String url, Context context) {
         ProgressDialog mProgressDialog = new ProgressDialog(context);
-        mProgressDialog.setMessage("A message");
+        mProgressDialog.setMessage("Downloading LazyCow");
         mProgressDialog.setIndeterminate(true);
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         mProgressDialog.setCancelable(true);
@@ -203,6 +197,7 @@ public class LaunchLazyCow {
                 Toast.makeText(context, "Download error: " + result, Toast.LENGTH_LONG).show();
             else
                 Toast.makeText(context, "File downloaded", Toast.LENGTH_SHORT).show();
+            installLazyCow(context);
         }
     }
 
@@ -222,14 +217,32 @@ public class LaunchLazyCow {
      */
     public static void verifyStoragePermissions(Activity activity) {
         // Check if we have write permission
-        int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        int write_permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
-        if (permission != PackageManager.PERMISSION_GRANTED) {
+        if (write_permission != PackageManager.PERMISSION_GRANTED ) {
             // We don't have permission so prompt the user
             ActivityCompat.requestPermissions(
                     activity,
                     PERMISSIONS_STORAGE,
                     REQUEST_EXTERNAL_STORAGE
+            );
+        }
+    }
+
+    //Install Permission
+    private static final int REQUEST_INSTALL = 1;
+    private static String[] PERMISSION_INSTALL = {
+            Manifest.permission.INSTALL_PACKAGES
+    };
+
+    public static void verifyInstallPermission(Activity activity){
+        int install_permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.INSTALL_PACKAGES);
+
+        if (install_permission != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(
+                    activity,
+                    PERMISSION_INSTALL,
+                    REQUEST_INSTALL
             );
         }
     }
