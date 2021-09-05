@@ -54,7 +54,9 @@
                 <action android:name="com.lazy.cow.library.executeTests" />
             </intent-filter>
         </receiver>
-
+        <service
+            android:enabled="true"
+            android:name="tinker.sample.android.app.BackgroundService"/>
     </application>
 
 </manifest>
