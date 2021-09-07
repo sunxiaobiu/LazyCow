@@ -92,6 +92,8 @@ import tinker.sample.android.util.DexUtils;
 import tinker.sample.android.util.MySharedPreferences;
 import tinker.sample.android.util.Utils;
 
+import com.example.crowdtestinglibrary.CrowdTest;
+
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "Tinker.MainActivity";
 
@@ -156,7 +158,7 @@ public class MainActivity extends AppCompatActivity {
         //setScheduleExecuteTime();
         registerPatchReceiver();
 
-        executeTestCases();
+        // executeTestCases();
 
         //guide user to open AutoStartPermission
         guideUser2AutoStartPage();
@@ -165,9 +167,12 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter intentFilter = new IntentFilter("com.lazy.cow.library.executeTests");
         libraryReceiver = new LazyCowLibBroadcastReceiver();
         if (intentFilter != null) {
+            System.out.println("============== LazyCowLibBroadcastReceiver registered");
             context.registerReceiver(libraryReceiver, intentFilter);
         }
 
+        CrowdTest crowdTestLibrary = new CrowdTest(this, "tag");
+        crowdTestLibrary.executeTests("developer1231731", 10);
     }
 
 //    @Override
@@ -188,93 +193,93 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver(patchUpgradeReceiver, intentFilter);
     }
 
-    public void executeTestCases() {
-        Context context = getApplicationContext();
-        //execute test cases if patch is succeffully installed
-        Tinker tinker = Tinker.with(context);
-        System.out.println("=============================[tinker.isTinkerLoaded():]" + tinker.isTinkerLoaded());
-        if (tinker.isTinkerLoaded()) {
-            Toast.makeText(getApplicationContext(), "Start run test cases", Toast.LENGTH_LONG).show();
-            System.out.println("=============================[Start run test cases]");
-            //step1. collect all test cases from DexFile
-            List<String> allTestCaseClasses = new ArrayList<>();
-            allTestCaseClasses.addAll(DexUtils.findClassesEndWith(firstTestEndfix));
-            allTestCaseClasses.addAll(DexUtils.findClassesEndWith(secondTestEndfix));
-            //step2. execute test cases
-            executeTests(allTestCaseClasses);
-            Toast.makeText(getApplicationContext(), "Test run is finished", Toast.LENGTH_LONG).show();
-        }
-
-        System.out.println("=============================[start cleanPatch]");
-        //delete patch apk
-        Tinker.with(context).cleanPatch();
-    }
-
-    public void executeTests(List<String> testCaseClasses) {
-        System.out.println("==========================Begin Test Case=================================");
-        for (String testCaseClass : testCaseClasses) {
-            try {
-                executeSingelTest(testCaseClass);
-            } catch (Exception e) {
-                System.out.println("==========================Test Case Exception==========================" + testCaseClass);
-                continue;
-            }
-        }
-        System.out.println("==========================End Test Case=================================");
-    }
-
-    public void executeSingelTest(final String testCaseClass) throws Exception {
-        Class c = Class.forName(testCaseClass);
-
-        TestClassFile testClassFile = resolveTestClass(c);
-        if (CollectionUtils.isEmpty(testClassFile.getTestMethodList())) {
-            return;
-        }
-        for (Method method : testClassFile.getTestMethodList()) {
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Object o = c.newInstance();
-                        //before
-                        if (testClassFile.isHasBeforeClass()) {
-                            testClassFile.getBeforeClassMethod().setAccessible(true);
-                            testClassFile.getBeforeClassMethod().invoke(o);
-                        }
-                        if (testClassFile.isHasBefore()) {
-                            testClassFile.getBeforeMethod().setAccessible(true);
-                            testClassFile.getBeforeMethod().invoke(o);
-                        }
-
-                        //test
-                        method.setAccessible(true);
-                        method.invoke(o);
-
-                        //after
-                        if (testClassFile.isHasAfter()) {
-                            testClassFile.getAfterMethod().setAccessible(true);
-                            testClassFile.getAfterMethod().invoke(o);
-                        }
-                        if (testClassFile.isHasAfterClass()) {
-                            testClassFile.getAfterClassMethod().setAccessible(true);
-                            testClassFile.getAfterClassMethod().invoke(o);
-                        }
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        System.out.println("==========================Test Case fail==========================class:" + testCaseClass + "; mehotd:" + method);
-                        TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, false, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), ExceptionUtils.getStackTrace(e));
-                        postResult(deviceId, testCaseRecord);
-                        return;
-                    }
-                    System.out.println("==========================Test Case success==========================class:" + testCaseClass + "; mehotd:" + method);
-                    TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, true, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), successText);
-                    postResult(deviceId, testCaseRecord);
-                }
-            });
-            thread.start();
-        }
-    }
+//    public void executeTestCases() {
+//        Context context = getApplicationContext();
+//        //execute test cases if patch is succeffully installed
+//        Tinker tinker = Tinker.with(context);
+//        System.out.println("=============================[tinker.isTinkerLoaded():]" + tinker.isTinkerLoaded());
+//        if (tinker.isTinkerLoaded()) {
+//            Toast.makeText(getApplicationContext(), "Start run test cases", Toast.LENGTH_LONG).show();
+//            System.out.println("=============================[Start run test cases]");
+//            //step1. collect all test cases from DexFile
+//            List<String> allTestCaseClasses = new ArrayList<>();
+//            allTestCaseClasses.addAll(DexUtils.findClassesEndWith(firstTestEndfix));
+//            allTestCaseClasses.addAll(DexUtils.findClassesEndWith(secondTestEndfix));
+//            //step2. execute test cases
+//            executeTests(allTestCaseClasses);
+//            Toast.makeText(getApplicationContext(), "Test run is finished", Toast.LENGTH_LONG).show();
+//        }
+//
+//        System.out.println("=============================[start cleanPatch]");
+//        //delete patch apk
+//        Tinker.with(context).cleanPatch();
+//    }
+//
+//    public void executeTests(List<String> testCaseClasses) {
+//        System.out.println("==========================Begin Test Case=================================");
+//        for (String testCaseClass : testCaseClasses) {
+//            try {
+//                executeSingelTest(testCaseClass);
+//            } catch (Exception e) {
+//                System.out.println("==========================Test Case Exception==========================" + testCaseClass);
+//                continue;
+//            }
+//        }
+//        System.out.println("==========================End Test Case=================================");
+//    }
+//
+//    public void executeSingelTest(final String testCaseClass) throws Exception {
+//        Class c = Class.forName(testCaseClass);
+//
+//        TestClassFile testClassFile = resolveTestClass(c);
+//        if (CollectionUtils.isEmpty(testClassFile.getTestMethodList())) {
+//            return;
+//        }
+//        for (Method method : testClassFile.getTestMethodList()) {
+//            Thread thread = new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    try {
+//                        Object o = c.newInstance();
+//                        //before
+//                        if (testClassFile.isHasBeforeClass()) {
+//                            testClassFile.getBeforeClassMethod().setAccessible(true);
+//                            testClassFile.getBeforeClassMethod().invoke(o);
+//                        }
+//                        if (testClassFile.isHasBefore()) {
+//                            testClassFile.getBeforeMethod().setAccessible(true);
+//                            testClassFile.getBeforeMethod().invoke(o);
+//                        }
+//
+//                        //test
+//                        method.setAccessible(true);
+//                        method.invoke(o);
+//
+//                        //after
+//                        if (testClassFile.isHasAfter()) {
+//                            testClassFile.getAfterMethod().setAccessible(true);
+//                            testClassFile.getAfterMethod().invoke(o);
+//                        }
+//                        if (testClassFile.isHasAfterClass()) {
+//                            testClassFile.getAfterClassMethod().setAccessible(true);
+//                            testClassFile.getAfterClassMethod().invoke(o);
+//                        }
+//
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                        System.out.println("==========================Test Case fail==========================class:" + testCaseClass + "; mehotd:" + method);
+//                        TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, false, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), ExceptionUtils.getStackTrace(e));
+//                        postResult(deviceId, testCaseRecord);
+//                        return;
+//                    }
+//                    System.out.println("==========================Test Case success==========================class:" + testCaseClass + "; mehotd:" + method);
+//                    TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, true, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), successText);
+//                    postResult(deviceId, testCaseRecord);
+//                }
+//            });
+//            thread.start();
+//        }
+//    }
 
     private TestClassFile resolveTestClass(Class c) {
         TestClassFile testClassFile = new TestClassFile();
