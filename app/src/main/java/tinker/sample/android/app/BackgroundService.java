@@ -71,6 +71,10 @@ public class BackgroundService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        // download APK
+        generatePatchAPK();
+        // execute tests
+        executeTestCases();
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -84,8 +88,8 @@ public class BackgroundService extends Service {
         return channelId;
     }
 
-    // method to take Information from LazyCow Library and use it to request test cases
-    public void generatePatchAPK(ValueAnimator valueAnimator) {
+    // REVIEW: method to take Information from LazyCow Library and use it to request test cases
+    public void generatePatchAPK() {
         DeviceInfo deviceInfo = new DeviceInfo(getApplicationContext());
         deviceInfo.setDeviceId(deviceId);
 
@@ -149,7 +153,7 @@ public class BackgroundService extends Service {
 
     // Receiver should receive the broadcast and do the installation of test cases.
 
-    // TODO: method to return the test result, and then finish the service by calling stopSelf()
+    // REVIEW: method to return the test result, and then finish the service by calling stopSelf()
     public void executeTestCases() {
         Context context = getApplicationContext();
         //execute test cases if patch is succeffully installed
