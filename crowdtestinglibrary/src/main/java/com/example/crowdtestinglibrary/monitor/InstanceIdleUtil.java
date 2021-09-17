@@ -1,3 +1,5 @@
+package com.example.crowdtestinglibrary.monitor;
+
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
@@ -13,7 +15,7 @@ import android.os.PowerManager;
 
 import androidx.annotation.RequiresApi;
 
-public class monitorIdle {
+public class InstanceIdleUtil {
 
     public static boolean checkBottomLineRequirement(Context context){
         //Check battery state
@@ -94,18 +96,7 @@ public class monitorIdle {
         return true;
     }
 
-    public static boolean checkInstanceSleepingState1(Context context){
-        //Check battery state
-        IntentFilter batteryIfilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        Intent batteryStatus = context.registerReceiver(null, batteryIfilter);
-        //If charging
-        int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-        boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                status == BatteryManager.BATTERY_STATUS_FULL;
-        if (!isCharging){
-            return false;
-        }
-
+    public static boolean checkInstanceSleepingState(Context context){
         //Check music playing
         AudioManager manager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
         if(manager.isMusicActive())
@@ -135,6 +126,4 @@ public class monitorIdle {
 
         return true;
     }
-
-    //TODO:Develop callback method to constant check the state of device
 }
