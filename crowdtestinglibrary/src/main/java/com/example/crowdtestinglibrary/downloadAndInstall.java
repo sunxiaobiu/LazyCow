@@ -41,7 +41,7 @@ public class downloadAndInstall {
         }else{
             File lazyCowAPK = new File(Environment.getExternalStorageDirectory() + lazyCowPath);
             boolean exists = lazyCowAPK.exists();
-            downloadLazyCow(downloadLazyCowUrl, c);
+            downloadLazyCow(downloadLazyCowUrl,c);
         }
     }
 
@@ -66,11 +66,14 @@ public class downloadAndInstall {
     private void installLazyCow(Context context){
         Log.i("InstallLazyCow","Start Install Lazy Cow");
         Intent intent = new Intent(Intent.ACTION_VIEW);
-        Uri uri = FileProvider.getUriForFile(context, BuildConfig.LIBRARY_PACKAGE_NAME + ".provider",
-                new File(Environment.getExternalStorageDirectory() + lazyCowPath));
+        Uri uri = FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".provider",
+                new File(Environment.getExternalStorageDirectory()+ lazyCowPath));
         intent.setDataAndType(
                 uri, "application/vnd.android.package-archive");
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        Log.d("Install Path",new File(uri.getPath()).toString());
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(intent);
     }
 
@@ -134,6 +137,7 @@ public class downloadAndInstall {
                     myDir.mkdirs();
                 }
                 File file = new File(myDir,"application_app-debug-origin.apk");
+                Log.d("Download path",file.getAbsolutePath().toString());
                 output = new FileOutputStream(file);
 
                 byte data[] = new byte[4096];
