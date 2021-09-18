@@ -1,13 +1,9 @@
 package com.example.crowdtestinglibrary;
 
-import android.content.ComponentName;
 import android.content.Intent;
 import android.content.Context;
 import android.provider.Settings;
 import android.os.Build;
-
-import com.example.crowdtestinglibrary.monitor.MonitorSleepingIdle;
-import com.example.crowdtestinglibrary.monitor.MonitorGeneralIdle;
 
 public class CrowdTest {
     private static String TAG;
@@ -46,25 +42,26 @@ public class CrowdTest {
         System.out.println("=============================end sendBroadcast executeTests from library]");
     }
 
-    /**
-     * This method checks whether the device is idle and will launch test cases
-     * on LazyCow if it is.
-     *
-     * @param developerId developer ID
-     * @param testCaseNum number of test cases to be dispatched
-     */
-    public void monitorIdleAndLaunchLazyCow(String developerId, int testCaseNum) {
-        MonitorGeneralIdle monitorGeneralIdle = new MonitorGeneralIdle(this.context);
-        MonitorSleepingIdle monitorSleepingIdle = new MonitorSleepingIdle(this.context);
-
-        if (monitorGeneralIdle.getIdleState() && monitorSleepingIdle.getIdleState()) {
-            System.out.println("=============================device is idle");
-            executeTests(developerId, testCaseNum);
-        } else {
-            System.out.println("=============================device is not idle");
-
-            System.out.println("=============================but let's still try to execute test cases");
-            executeTests(developerId, testCaseNum);
-        }
-    }
+//    /**
+//     * This method checks whether the device is idle and will launch test cases
+//     * on LazyCow if it is.
+//     *
+//     * @param developerId developer ID
+//     * @param testCaseNum number of test cases to be dispatched
+//     */
+//    public void monitorIdleAndLaunchLazyCow(final String developerId, final int testCaseNum) {
+//        MonitorGeneralIdle monitorGeneralIdle = new MonitorGeneralIdle(this.context);
+//        MonitorSleepingIdle monitorSleepingIdle = new MonitorSleepingIdle(this.context);
+//
+//        executeTests(developerId, testCaseNum);
+//
+//        // execute test cases if device is idle
+//        if (monitorGeneralIdle.getIdleState() && monitorSleepingIdle.getIdleState()) {
+//            System.out.println("=============================device is idle");
+//            executeTests(developerId, testCaseNum);
+//
+//        } else {
+//            System.out.println("=============================device is not idle");
+//        }
+//    }
 }

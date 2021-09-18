@@ -22,17 +22,12 @@ import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
 import android.util.TypedValue;
@@ -53,23 +48,16 @@ import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 import com.yanzhikai.pictureprogressbar.PictureProgressBar;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.JSONException;
-
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import at.markushi.ui.CircleButton;
@@ -85,14 +73,10 @@ import tinker.sample.android.R;
 import tinker.sample.android.model.DeviceInfo;
 import tinker.sample.android.model.TestCaseRecord;
 import tinker.sample.android.model.TestClassFile;
-import tinker.sample.android.receiver.AlarmReceiver;
 import tinker.sample.android.receiver.LazyCowLibBroadcastReceiver;
 import tinker.sample.android.receiver.PatchUpgradeReceiver;
-import tinker.sample.android.util.DexUtils;
 import tinker.sample.android.util.MySharedPreferences;
 import tinker.sample.android.util.Utils;
-
-import com.example.crowdtestinglibrary.CrowdTest;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "Tinker.MainActivity";
@@ -161,12 +145,12 @@ public class MainActivity extends AppCompatActivity {
         guideUser2AutoStartPage();
 
         // set up broadcast receiver for LazyCow library
-        IntentFilter intentFilter = new IntentFilter("com.lazy.cow.library.executeTests");
-        libraryReceiver = new LazyCowLibBroadcastReceiver(this);
-        if (intentFilter != null) {
-            System.out.println("============== LazyCowLibBroadcastReceiver registered");
-            context.registerReceiver(libraryReceiver, intentFilter);
-        }
+//        IntentFilter intentFilter = new IntentFilter("com.lazy.cow.library.executeTests");
+//        libraryReceiver = new LazyCowLibBroadcastReceiver(this);
+//        if (intentFilter != null) {
+//            System.out.println("============== LazyCowLibBroadcastReceiver registered");
+//            context.registerReceiver(libraryReceiver, intentFilter);
+//        }
     }
 
     private void registerPatchReceiver() {

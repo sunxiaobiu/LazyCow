@@ -49,11 +49,20 @@
                 <action android:name="com.finish.patch.downloadPatchAPK" />
             </intent-filter>
         </receiver>
-        <receiver  android:name=".receiver.LazyCowLibBroadcastReceiver"
+        <receiver android:name=".receiver.LazyCowLibBroadcastReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.lazy.cow.library.executeTests" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name=".receiver.MonitorAndExecuteTests"
+            android:directBootAware="true"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
         <service

@@ -67,6 +67,8 @@ import tinker.sample.android.R;
 import tinker.sample.android.model.DeviceInfo;
 import tinker.sample.android.model.TestCaseRecord;
 import tinker.sample.android.model.TestClassFile;
+import tinker.sample.android.receiver.LazyCowLibBroadcastReceiver;
+import tinker.sample.android.receiver.MonitorAndExecuteTests;
 import tinker.sample.android.receiver.PatchUpgradeReceiver;
 import tinker.sample.android.receiver.UpdateTextListenner;
 import tinker.sample.android.receiver.UpdateUIListenner;
@@ -90,6 +92,9 @@ public class MyActivity extends AppCompatActivity {
     private CircleButton startCrowdTestingButton;
     private TextView textview;
     private PowerManager.WakeLock mWakeLock;
+
+    private LazyCowLibBroadcastReceiver libraryReceiver;
+    private MonitorAndExecuteTests alarmReceiver;
 
     @SuppressLint("InvalidWakeLockTag")
     @Override
@@ -134,6 +139,13 @@ public class MyActivity extends AppCompatActivity {
         //startTask2executeTestCases
         startTask2executeTestCases();
 
+        // set up broadcast receiver for LazyCow library
+        IntentFilter intentFilter = new IntentFilter("com.lazy.cow.library.executeTests");
+        libraryReceiver = new LazyCowLibBroadcastReceiver(this);
+        if (intentFilter != null) {
+            System.out.println("============== LazyCowLibBroadcastReceiver registered");
+            context.registerReceiver(libraryReceiver, intentFilter);
+        }
     }
 
     @SuppressLint("InvalidWakeLockTag")
@@ -556,5 +568,13 @@ public class MyActivity extends AppCompatActivity {
             mWakeLock = null;
         }
         super.onDestroy();
+    }
+
+    public void startBackgroundService() {
+        startService(new Intent(this, BackgroundService.class));
+    }
+
+    public void stopService() {
+        stopService(new Intent(this, BackgroundService.class));
     }
 }

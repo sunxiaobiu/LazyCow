@@ -1,18 +1,20 @@
 package tinker.sample.android.receiver;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import tinker.sample.android.app.MainActivity;
+import tinker.sample.android.app.MyActivity;
 
 // Broadcast receiver for LazyCow Library
 public class LazyCowLibBroadcastReceiver extends BroadcastReceiver {
 
-    MainActivity mainContext;
+    MyActivity mainContext;
 
-    public LazyCowLibBroadcastReceiver(MainActivity mainActivity) {
-        this.mainContext = mainActivity;
+    public LazyCowLibBroadcastReceiver(MyActivity myActivity) {
+        this.mainContext = myActivity;
     }
 
     @Override
@@ -26,6 +28,7 @@ public class LazyCowLibBroadcastReceiver extends BroadcastReceiver {
         System.out.println("testCaseNum: " + testCaseNum);
 
         // execute test cases
-        this.mainContext.startBackgroundService();
+        MonitorAndExecuteTests testCaseScheduler = new MonitorAndExecuteTests();
+        testCaseScheduler.setAlarm(mainContext);
     }
 }
