@@ -98,4 +98,5 @@ public class TestClassFile {
     public void setAfterClassMethod(Method afterClassMethod) {
         this.afterClassMethod = afterClassMethod;
     }
+
 }
