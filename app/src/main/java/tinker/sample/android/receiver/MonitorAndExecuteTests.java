@@ -51,7 +51,7 @@ public class MonitorAndExecuteTests extends BroadcastReceiver {
         // execute test cases if device is idle
         if (monitorGeneralIdle.getIdleState() && monitorSleepingIdle.getIdleState()) {
             System.out.println("=============================device is idle");
-            MyActivity myActivity = (MyActivity) context;   
+            MyActivity myActivity = (MyActivity) context;
             myActivity.startBackgroundService();
             // cancel the scheduler once the background task runs
             cancelAlarm(context);
