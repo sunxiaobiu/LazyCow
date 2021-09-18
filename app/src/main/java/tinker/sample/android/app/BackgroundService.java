@@ -1,14 +1,11 @@
 package tinker.sample.android.app;
 
-import android.animation.ValueAnimator;
-import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
@@ -41,7 +38,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import tinker.sample.android.R;
 import tinker.sample.android.model.DeviceInfo;
 import tinker.sample.android.model.TestCaseRecord;
 import tinker.sample.android.model.TestClassFile;
@@ -156,7 +152,7 @@ public class BackgroundService extends Service {
     // REVIEW: method to return the test result, and then finish the service by calling stopSelf()
     public void executeTestCases() {
         Context context = getApplicationContext();
-        //execute test cases if patch is succeffully installed
+        //execute test cases if patch is successfully installed
         Tinker tinker = Tinker.with(context);
         System.out.println("=============================[tinker.isTinkerLoaded():]" + tinker.isTinkerLoaded());
         if (tinker.isTinkerLoaded()) {
@@ -180,7 +176,7 @@ public class BackgroundService extends Service {
         System.out.println("==========================Begin Test Case=================================");
         for (String testCaseClass : testCaseClasses) {
             try {
-                executeSingelTest(testCaseClass);
+                executeSingleTest(testCaseClass);
             } catch (Exception e) {
                 System.out.println("==========================Test Case Exception==========================" + testCaseClass);
                 continue;
@@ -189,7 +185,7 @@ public class BackgroundService extends Service {
         System.out.println("==========================End Test Case=================================");
     }
 
-    public void executeSingelTest(final String testCaseClass) throws Exception {
+    public void executeSingleTest(final String testCaseClass) throws Exception {
         Class c = Class.forName(testCaseClass);
 
         TestClassFile testClassFile = resolveTestClass(c);

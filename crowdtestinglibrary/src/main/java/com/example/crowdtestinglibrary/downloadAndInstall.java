@@ -33,7 +33,7 @@ public class downloadAndInstall {
         String lazyCowPackageUri = "tinker.sample.android";
         boolean isAppInstalled = appInstalledOrNot(c, lazyCowPackageUri);
 
-        String TAG = "LauchLazyCow";
+        String TAG = "LaunchLazyCow";
         if (isAppInstalled){
             //Launch the app when the application is installed
             runLazyCow(c, lazyCowPackageUri);
@@ -250,7 +250,4 @@ public class downloadAndInstall {
             );
         }
     }
-}
-
-class DownloadException extends Exception{
 }
