@@ -20,6 +20,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.TrafficStats;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -39,7 +40,9 @@ import com.yanzhikai.pictureprogressbar.PictureProgressBar;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -72,6 +75,8 @@ import tinker.sample.android.receiver.UpdateTextListenner;
 import tinker.sample.android.receiver.UpdateUIListenner;
 import tinker.sample.android.util.DexUtils;
 import tinker.sample.android.util.MySharedPreferences;
+import tinker.sample.android.util.OkHttpSingleton;
+import tinker.sample.android.util.TopExceptionHandler;
 import tinker.sample.android.util.Utils;
 
 public class MyActivity extends AppCompatActivity {
@@ -90,6 +95,8 @@ public class MyActivity extends AppCompatActivity {
     private CircleButton startCrowdTestingButton;
     private TextView textview;
     private PowerManager.WakeLock mWakeLock;
+    private static final int THREAD_ID = 10000;
+    private JSONArray jsonArray = new JSONArray();
 
     @SuppressLint("InvalidWakeLockTag")
     @Override
@@ -102,6 +109,8 @@ public class MyActivity extends AppCompatActivity {
         //test resource change
         Log.e(TAG, "i am on onCreate string:" + getResources().getString(R.string.test_resource));
 
+        Thread.setDefaultUncaughtExceptionHandler(new TopExceptionHandler(this));
+
         startCrowdTestingButton = (CircleButton) findViewById(R.id.startCrowdTesting);
 
         context = getApplicationContext();
@@ -109,11 +118,14 @@ public class MyActivity extends AppCompatActivity {
         deviceId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID) + "_" + Build.SERIAL;
 
         pb_2 = (PictureProgressBar) findViewById(R.id.pb_2);
+        pb_2.setDrawableIds(new int[]{R.drawable.i00, R.drawable.i01, R.drawable.i02, R.drawable.i03, R.drawable.i04, R.drawable.i05, R.drawable.i06});
+        pb_2.setAnimRun(false);
 
         startCrowdTestingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //Toast.makeText(context, "Start CrowdTesting, please wait for download...", Toast.LENGTH_LONG).show();
+                pb_2.setAnimRun(true);
                 textview.setText("Initializing...");
                 startCrowdTestingButton.setEnabled(false);
                 generatePatchAPK();
@@ -172,6 +184,8 @@ public class MyActivity extends AppCompatActivity {
         Tinker tinker = Tinker.with(context);
         System.out.println("=============================[tinker.isTinkerLoaded():]" + tinker.isTinkerLoaded());
         if (tinker.isTinkerLoaded()) {
+            pb_2.setAnimRun(true);
+            startCrowdTestingButton.setEnabled(false);
             HighPriorityTask highPriorityTask = new HighPriorityTask();
             highPriorityTask.execute(deviceId);
         }
@@ -184,9 +198,9 @@ public class MyActivity extends AppCompatActivity {
         DeviceInfo deviceInfo = new DeviceInfo(context);
         deviceInfo.setDeviceId(deviceId);
 
-        OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.MINUTES)
-                .readTimeout(10, TimeUnit.MINUTES);
+        OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(5, TimeUnit.MINUTES)
+                .readTimeout(5, TimeUnit.MINUTES);
         RequestBody requestBody = new FormBody.Builder()
                 .add("deviceInfo", deviceInfo.toString())
                 .build();
@@ -280,6 +294,11 @@ public class MyActivity extends AppCompatActivity {
             Log.i("HighPriorityTask", result );
             textview.setText("Finished!");
             pb_2.setProgress(100);
+            startCrowdTestingButton.setEnabled(false);
+            if (pb_2.getProgress() >= 100) {
+                //stop animation
+                pb_2.setAnimRun(false);
+            }
         }
 
         @Override
@@ -305,7 +324,20 @@ public class MyActivity extends AppCompatActivity {
             allTestCaseClasses.remove("tinker.sample.android.androidtest.SmallTest");
             allTestCaseClasses.remove("tinker.sample.android.androidtest.LargeTest");
             allTestCaseClasses.remove("tinker.sample.android.androidtest.UiThreadTest");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.SelectTest");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.Test");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.TonesAutoTest");
             allTestCaseClasses.remove("tinker.sample.android.androidtest.ApplicationTest");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.PackageHelperTests");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.NewDatabasePerformanceTests");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.TransactionExecutorTests");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.ServicesTests");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.KernelPackageMappingTests");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.AppsQueryHelperTests");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.ClientTransactionTests");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.BroadcastReceiverTests");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.JNITests");
+            allTestCaseClasses.remove("tinker.sample.android.androidtest.ServicesTests");
 
             //step2. execute test cases
             executeTests(allTestCaseClasses);
@@ -335,7 +367,7 @@ public class MyActivity extends AppCompatActivity {
             System.out.println("==========================End Test Case=================================");
         }
 
-        public void executeSingelTest(final String testCaseClass) throws Exception {
+        public void executeSingelTest(final String testCaseClass) throws JSONException {
             Class c = null;
             TestClassFile testClassFile = null;
             try {
@@ -383,11 +415,13 @@ public class MyActivity extends AppCompatActivity {
                     e.printStackTrace();
                     System.out.println("==========================Test Case fail==========================class:" + testCaseClass + "; mehotd:" + method);
                     TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, false, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), ExceptionUtils.getStackTrace(e));
+                    jsonArray.put(testCaseRecord.toJson());
                     postResult(deviceId, testCaseRecord);
                     return;
                 }
                 System.out.println("==========================Test Case success==========================class:" + testCaseClass + "; mehotd:" + method);
                 TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, true, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), successText);
+                jsonArray.put(testCaseRecord.toJson());
                 postResult(deviceId, testCaseRecord);
 //                }
 //            });
@@ -460,7 +494,9 @@ public class MyActivity extends AppCompatActivity {
 
         private void postResult(String deviceId, final TestCaseRecord testCaseRecord) {
             String postUrl = "http://118.138.236.244:8080/RemoteTest/testCase/collectRes";
-            OkHttpClient client = new OkHttpClient();
+            //OkHttpClient client = new OkHttpClient();
+            TrafficStats.setThreadStatsTag(THREAD_ID);
+            OkHttpSingleton client = OkHttpSingleton.getInstance();
             RequestBody requestBody = null;
             try {
                 requestBody = new FormBody.Builder()
@@ -474,7 +510,7 @@ public class MyActivity extends AppCompatActivity {
                     .url(postUrl)
                     .post(requestBody)
                     .build();
-            client.newCall(request).enqueue(new Callback() {
+            client.getClient().newCall(request).enqueue(new Callback() {
                 @SuppressLint("LongLogTag")
                 @Override
                 public void onFailure(Call call, IOException e) {
