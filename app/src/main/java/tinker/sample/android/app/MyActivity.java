@@ -31,8 +31,10 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.gson.Gson;
 import com.judemanutd.autostarter.AutoStartPermissionHelper;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
@@ -97,6 +99,7 @@ public class MyActivity extends AppCompatActivity {
     private PowerManager.WakeLock mWakeLock;
     private static final int THREAD_ID = 10000;
     private JSONArray jsonArray = new JSONArray();
+    List<String> executedTestCaseIds = new ArrayList<>();
 
     @SuppressLint("InvalidWakeLockTag")
     @Override
@@ -183,12 +186,52 @@ public class MyActivity extends AppCompatActivity {
         //execute test cases if patch is succeffully installed
         Tinker tinker = Tinker.with(context);
         System.out.println("=============================[tinker.isTinkerLoaded():]" + tinker.isTinkerLoaded());
-        if (tinker.isTinkerLoaded()) {
-            pb_2.setAnimRun(true);
-            startCrowdTestingButton.setEnabled(false);
-            HighPriorityTask highPriorityTask = new HighPriorityTask();
-            highPriorityTask.execute(deviceId);
+        //if (tinker.isTinkerLoaded() && hasUnexecutedTest()) {
+        if(tinker.isTinkerLoaded()){
+            //check if there is Unexecuted tests. Only some tests haven't been executed, then we need to run them.
+            hasUnexecutedTest();
         }
+
+    }
+
+    public void hasUnexecutedTest(){
+        //collect tests from dex files
+        List<String> allTestCaseClasses = getTestFromDex();
+
+        //collect executed tests from server
+        OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(1, TimeUnit.MINUTES)
+                .readTimeout(1, TimeUnit.MINUTES);
+        RequestBody requestBody = new FormBody.Builder()
+                .add("deviceId", deviceId)
+                .build();
+        Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/collectExecutedTests").post(requestBody).build();
+        builder.build().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.d(TAG, "【collectExecutedTests】request Failure. Exception:" + e);
+            }
+
+            @Override
+            public void onResponse(Call call, final Response response) throws IOException {
+                Log.d(TAG, "【collectExecutedTests】request success. ");
+                System.out.println("========response.body()====="+response.body());
+                Gson gson = new Gson();
+                executedTestCaseIds = gson.fromJson(response.body().string(), new ArrayList<String>().getClass());
+
+                for(String testCaseId : allTestCaseClasses){
+                    if(!executedTestCaseIds.contains(testCaseId)){
+                        //entrance of executing test
+                        pb_2.setAnimRun(true);
+                        startCrowdTestingButton.setEnabled(false);
+                        HighPriorityTask highPriorityTask = new HighPriorityTask();
+                        highPriorityTask.execute(deviceId);
+                    }
+                }
+
+            }
+        });
+
     }
 
     public void generatePatchAPK() {
@@ -314,30 +357,7 @@ public class MyActivity extends AppCompatActivity {
         public void executeTestCases(){
             System.out.println("=============================[Start run test cases]");
             //step1. collect all test cases from DexFile
-            List<String> allTestCaseClasses = new ArrayList<>();
-            allTestCaseClasses.addAll(DexUtils.findClassesStartEndWith(testCasePrefix, firstTestEndfix));
-            allTestCaseClasses.addAll(DexUtils.findClassesStartWith(sencondTestCasePrefix));
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.BaseTest");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.BandwidthTest");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.FlakyTest");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.MediumTest");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.SmallTest");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.LargeTest");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.UiThreadTest");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.SelectTest");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.Test");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.TonesAutoTest");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.ApplicationTest");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.PackageHelperTests");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.NewDatabasePerformanceTests");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.TransactionExecutorTests");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.ServicesTests");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.KernelPackageMappingTests");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.AppsQueryHelperTests");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.ClientTransactionTests");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.BroadcastReceiverTests");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.JNITests");
-            allTestCaseClasses.remove("tinker.sample.android.androidtest.ServicesTests");
+            List<String> allTestCaseClasses = getTestFromDex();
 
             //step2. execute test cases
             executeTests(allTestCaseClasses);
@@ -558,6 +578,35 @@ public class MyActivity extends AppCompatActivity {
         }
 
 
+    }
+
+    @NonNull
+    private List<String> getTestFromDex() {
+        List<String> allTestCaseClasses = new ArrayList<>();
+        allTestCaseClasses.addAll(DexUtils.findClassesStartEndWith(testCasePrefix, firstTestEndfix));
+        allTestCaseClasses.addAll(DexUtils.findClassesStartWith(sencondTestCasePrefix));
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.BaseTest");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.BandwidthTest");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.FlakyTest");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.MediumTest");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.SmallTest");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.LargeTest");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.UiThreadTest");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.SelectTest");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.Test");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.TonesAutoTest");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.ApplicationTest");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.PackageHelperTests");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.NewDatabasePerformanceTests");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.TransactionExecutorTests");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.ServicesTests");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.KernelPackageMappingTests");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.AppsQueryHelperTests");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.ClientTransactionTests");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.BroadcastReceiverTests");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.JNITests");
+        allTestCaseClasses.remove("tinker.sample.android.androidtest.ServicesTests");
+        return allTestCaseClasses;
     }
 
     @Override
