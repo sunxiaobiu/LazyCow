@@ -132,13 +132,13 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        startCrowdTestingButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(getApplicationContext(), "Start CrowdTesting, please wait for download...", Toast.LENGTH_LONG).show();
-                generatePatchAPK(valueAnimator);
-            }
-        });
+//        startCrowdTestingButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Toast.makeText(getApplicationContext(), "Start CrowdTesting, please wait for download...", Toast.LENGTH_LONG).show();
+//                generatePatchAPK(valueAnimator);
+//            }
+//        });
         registerPatchReceiver();
 
         //guide user to open AutoStartPermission
@@ -161,177 +161,6 @@ public class MainActivity extends AppCompatActivity {
         intentFilter.addAction("com.finish.patch.downloadPatchAPK");
         // 3. 动态注册：调用Context的registerReceiver（）方法
         registerReceiver(patchUpgradeReceiver, intentFilter);
-    }
-
-    private TestClassFile resolveTestClass(Class c) {
-        TestClassFile testClassFile = new TestClassFile();
-        if (CollectionUtils.isNotEmpty(Arrays.asList(c.getMethods()))) {
-            for (Method method : c.getDeclaredMethods()) {
-                //BeforeClass
-                if (method.getAnnotations() != null) {
-                    for (Annotation annotation : method.getAnnotations()) {
-                        if (annotation.annotationType().toString().equals("BeforeClass")) {
-                            testClassFile.setHasBeforeClass(true);
-                            testClassFile.setBeforeClassMethod(method);
-                        }
-                    }
-                }
-
-                //BeforeMethod
-                if (method.getName().equals("setUp")) {
-                    testClassFile.setHasBefore(true);
-                    testClassFile.setBeforeMethod(method);
-                }
-                if (method.getAnnotations() != null) {
-                    for (Annotation annotation : method.getAnnotations()) {
-                        if (annotation.annotationType().toString().equals("Before")) {
-                            testClassFile.setHasBefore(true);
-                            testClassFile.setBeforeMethod(method);
-                        }
-                    }
-                }
-
-                //AfterMethod
-                if (method.getName().equals("tearDown")) {
-                    testClassFile.setHasAfter(true);
-                    testClassFile.setAfterMethod(method);
-                }
-                if (method.getAnnotations() != null) {
-                    for (Annotation annotation : method.getAnnotations()) {
-                        if (annotation.annotationType().toString().equals("After")) {
-                            testClassFile.setHasAfter(true);
-                            testClassFile.setAfterMethod(method);
-                        }
-                    }
-                }
-
-                //AfterClass
-                if (method.getAnnotations() != null) {
-                    for (Annotation annotation : method.getAnnotations()) {
-                        if (annotation.annotationType().toString().equals("AfterClass")) {
-                            testClassFile.setHasAfterClass(true);
-                            testClassFile.setAfterClassMethod(method);
-                        }
-                    }
-                }
-
-                //test methods
-                if (isTestMethod(method)) {
-                    testClassFile.getTestMethodList().add(method);
-                }
-
-            }
-        }
-        return testClassFile;
-    }
-
-    private void postResult(String deviceId, final TestCaseRecord testCaseRecord) {
-        String postUrl = "http://118.138.236.244:8080/RemoteTest/testCase/collectRes";
-        OkHttpClient client = new OkHttpClient();
-        RequestBody requestBody = null;
-        try {
-            requestBody = new FormBody.Builder()
-                    .add("deviceId", deviceId)
-                    .add("testCaseRecord", testCaseRecord.toJson().toString())
-                    .build();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        Request request = new Request.Builder()
-                .url(postUrl)
-                .post(requestBody)
-                .build();
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                Log.d(TAG, "【TestCaseName】" + testCaseRecord.getTestCaseName() + "----post data Failure");
-                call.cancel();
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                Log.d(TAG, "【TestCaseName】" + testCaseRecord.getTestCaseName() + "----post data success");
-            }
-        });
-    }
-
-    private static TestCaseRecord constructTestCaseRecord(String deviceId, boolean isSuccess, String testCaseName, String res) {
-        TestCaseRecord testCaseRecord = new TestCaseRecord();
-
-        testCaseRecord.setSuccess(isSuccess);
-        testCaseRecord.setDeviceId(deviceId);
-        testCaseRecord.setTestCaseName(testCaseName);
-        testCaseRecord.setResult(res);
-
-        return testCaseRecord;
-    }
-
-    public void generatePatchAPK(ValueAnimator valueAnimator) {
-        pb_2.setPicture(R.drawable.runningcow);
-        valueAnimator.start();
-        pb_2.setProgress(10);
-
-        DeviceInfo deviceInfo = new DeviceInfo(getApplicationContext());
-        deviceInfo.setDeviceId(deviceId);
-
-        OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.MINUTES)
-                .readTimeout(10, TimeUnit.MINUTES);
-        RequestBody requestBody = new FormBody.Builder()
-                .add("deviceInfo", deviceInfo.toString())
-                .build();
-        Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/generatePatchAPK").post(requestBody).build();
-        builder.build().newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                Log.d(TAG, "【generatePatchAPK】request Failure. Exception:" + e);
-            }
-
-            @Override
-            public void onResponse(Call call, final Response response) throws IOException {
-                Log.d(TAG, "【generatePatchAPK】request success. ");
-                pb_2.setProgress(60);
-                writePatchAPKToExternalStorage(response, patchAPKName);
-                pb_2.setProgress(100);
-            }
-        });
-    }
-
-    private void writePatchAPKToExternalStorage(Response response, String fileName) {
-        try {
-            File file = new File(context.getCacheDir(), fileName);
-            if (file.exists()) {
-                System.out.println("delete former file:" + fileName);
-                file.delete();
-            }
-
-            InputStream is = response.body().byteStream();
-            OutputStream out = new FileOutputStream(new File(context.getCacheDir(), fileName));
-            byte[] buffer = new byte[1024];
-            int len = 0;
-            int readlen = 0;
-            while ((len = is.read(buffer)) != -1) {
-                out.write(buffer, 0, len);
-                readlen += len;
-            }
-
-            System.out.println("========FileName=====" + fileName + "========exist=====" + file.exists());
-            sendBroadcast();
-        } catch (IOException e) {
-            System.out.println("========writeDatasToExternalStorage fail========" + e);
-
-        }
-    }
-
-    private void sendBroadcast() {
-        System.out.println("=============================[start sendBroadcast downloadPatchAPK]");
-        Intent intent = new Intent();
-        //设置action
-        intent.setAction("com.finish.patch.downloadPatchAPK");
-        //传递参数
-//        intent.putExtra("packageCodePath", getPackageCodePath());
-        sendBroadcast(intent);
-        System.out.println("=============================[end sendBroadcast downloadPatchAPK]");
     }
 
     private void askForRequiredPermissions() {
@@ -407,26 +236,6 @@ public class MainActivity extends AppCompatActivity {
             AutoStartPermissionHelper.getInstance().getAutoStartPermission(context);
             System.out.println("isAutoStartPermissionAvailable :" + AutoStartPermissionHelper.getInstance().isAutoStartPermissionAvailable(context));
         }
-    }
-
-    private boolean isTestMethod(Method method) {
-        boolean isTestFlag = false;
-
-        //1.contains Test annotation
-        if (method.getAnnotations() != null) {
-            for (Annotation annotation : method.getAnnotations()) {
-                if (annotation.annotationType().toString().contains("Test")) {
-                    isTestFlag = true;
-                }
-            }
-        }
-
-        //2.public testXXX()
-        boolean isPublic = (method.getModifiers() & Modifier.PUBLIC) != 0;
-        if (method.getName().startsWith("test") && isPublic) {
-            isTestFlag = true;
-        }
-        return isTestFlag;
     }
 
     @Override
