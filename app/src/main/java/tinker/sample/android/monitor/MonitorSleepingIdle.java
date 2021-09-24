@@ -8,6 +8,8 @@ import android.hardware.SensorManager;
 import android.util.Log;
 
 public class MonitorSleepingIdle implements SensorEventListener {
+    private final String TAG = "MonitorSleepingIdle";
+
     private SensorManager sensorManager;
     private Context context;
 
@@ -51,6 +53,7 @@ public class MonitorSleepingIdle implements SensorEventListener {
         }else {
             isFlat = false;
         }
+        Log.i(TAG, "BL:"+meetBottomLine+", Instance:"+isInstanceIdleMet+", Flat:"+isFlat);
     }
 
     @Override

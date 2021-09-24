@@ -36,7 +36,7 @@ public class InstanceIdleUtil {
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         activityManager.getMemoryInfo(mi);
         double percentRAMAvail = mi.availMem / (double) mi.totalMem*100;
-        if (percentRAMAvail < 30){
+        if (percentRAMAvail < 20){
             return false;
         }
 
@@ -72,7 +72,7 @@ public class InstanceIdleUtil {
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         activityManager.getMemoryInfo(mi);
         double percentRAMAvail = mi.availMem / (double) mi.totalMem*100;
-        if (percentRAMAvail < 60){
+        if (percentRAMAvail < 25){
             return false;
         }
 
@@ -97,14 +97,6 @@ public class InstanceIdleUtil {
         AudioManager manager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
         if(manager.isMusicActive())
         {
-            return false;
-        }
-
-        //Check wifi connected
-        ConnectivityManager connManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-
-        if (mWifi.isConnected()) {
             return false;
         }
 
