@@ -21,17 +21,60 @@
         android:layout_width="386dp"
         android:layout_height="200dp"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="85dp"
+        android:layout_marginTop="120dp"
         android:fontFamily="monospace"
         android:singleLine="false"
         android:text="Hi there, this is LazyCow, a \nmobile platform for supporting \ncrowdsourced unit testing.
         \nI work as hard as Cow! \nYet, I am lazy and will only \nwork when you ask me to do \nso or your phone is idle for a \ncertain period."
         android:textAlignment="textStart"
         android:textAllCaps="false"
-        android:textSize="18sp"
+        android:textSize="16sp"
         android:textStyle="bold"
         android:typeface="serif" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:descendantFocusability="blocksDescendants"
+        android:orientation="horizontal">
+
+        <CheckBox
+            android:id="@+id/click_cb_wc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="30dp"
+            android:layout_marginTop="80dp"
+            android:clickable="true"
+            android:textColor="#fff"
+            android:textSize="14sp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="50dp"
+            android:layout_marginTop="80dp"
+            android:text="strategy 1"
+            android:textColor="#282828"
+            android:textSize="14sp" />
+
+        <CheckBox
+            android:id="@+id/click_cb_wwc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="30dp"
+            android:layout_marginTop="80dp"
+            android:clickable="true"
+            android:textColor="#fff"
+            android:textSize="14sp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="10dp"
+            android:gravity="right"
+            android:layout_marginTop="80dp"
+            android:text="strategy 2"
+            android:textColor="#282828"
+            android:textSize="14sp" />
+    </LinearLayout>
 
     <at.markushi.ui.CircleButton
         android:id="@+id/startCrowdTesting"
@@ -51,8 +94,7 @@
         android:layout_height="60dp"
         android:layout_marginLeft="250dp"
         android:layout_marginTop="265dp"
-        android:src="@drawable/moo"
-        />
+        android:src="@drawable/moo" />
 
     <com.yanzhikai.pictureprogressbar.PictureProgressBar
         android:id="@+id/pb_2"
@@ -75,8 +117,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="450dp"
+        android:text=""
         android:textStyle="bold"
-        android:typeface="serif"
-        android:text="" />
+        android:typeface="serif" />
 
 </RelativeLayout>

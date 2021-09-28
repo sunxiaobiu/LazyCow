@@ -12,6 +12,16 @@ public class TestCaseRecord {
 
     private String result;
 
+    private int dispatchStrategy;
+
+    public int getDispatchStrategy() {
+        return dispatchStrategy;
+    }
+
+    public void setDispatchStrategy(int dispatchStrategy) {
+        this.dispatchStrategy = dispatchStrategy;
+    }
+
     public String getTestCaseName() {
         return testCaseName;
     }
@@ -50,6 +60,7 @@ public class TestCaseRecord {
         json.put("deviceId", this.deviceId);
         json.put("isSuccess", this.isSuccess);
         json.put("result", this.result);
+        json.put("dispatchStrategy", this.dispatchStrategy);
         return json;
     }
 

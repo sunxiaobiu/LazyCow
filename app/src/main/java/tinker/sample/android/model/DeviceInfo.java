@@ -16,8 +16,17 @@ public class DeviceInfo {
     public String hardware;
     public String language;
     public String screenSize;
+    private int dispatchStrategy;
 
     private Context context;
+
+    public int getDispatchStrategy() {
+        return dispatchStrategy;
+    }
+
+    public void setDispatchStrategy(int dispatchStrategy) {
+        this.dispatchStrategy = dispatchStrategy;
+    }
 
     public String getDeviceId() {
         return deviceId;
@@ -97,6 +106,7 @@ public class DeviceInfo {
             jsonObject.put("hardware", getHardware());
             jsonObject.put("language", getLanguage());
             jsonObject.put("screenSize", getScreenSize());
+            jsonObject.put("dispatchStrategy", getDispatchStrategy());
             deviceMetadata = jsonObject.toString();
         } catch (Exception e) {
             e.printStackTrace();

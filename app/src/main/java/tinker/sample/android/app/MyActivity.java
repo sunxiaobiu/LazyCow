@@ -28,10 +28,11 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.gson.Gson;
@@ -44,7 +45,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -100,6 +100,9 @@ public class MyActivity extends AppCompatActivity {
     private static final int THREAD_ID = 10000;
     private JSONArray jsonArray = new JSONArray();
     List<String> executedTestCaseIds = new ArrayList<>();
+    private int dispatchStrategy = 1;
+    private CheckBox cb_wc;
+    private CheckBox cb_wwc;
 
     @SuppressLint("InvalidWakeLockTag")
     @Override
@@ -124,6 +127,8 @@ public class MyActivity extends AppCompatActivity {
         pb_2.setDrawableIds(new int[]{R.drawable.i00, R.drawable.i01, R.drawable.i02, R.drawable.i03, R.drawable.i04, R.drawable.i05, R.drawable.i06});
         pb_2.setAnimRun(false);
 
+        initCheckBoxView();
+
         startCrowdTestingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -136,6 +141,8 @@ public class MyActivity extends AppCompatActivity {
         });
 
         textview = (TextView) findViewById(R.id.textview);
+        UpdateStrategyCheckBox updateStrategyCheckBox = new UpdateStrategyCheckBox();
+        updateStrategyCheckBox.execute();
 
         //setScheduleExecuteTime();
         registerReceiverForPatchUpgrade();
@@ -148,7 +155,38 @@ public class MyActivity extends AppCompatActivity {
 
         //startTask2executeTestCases
         startTask2executeTestCases();
+    }
 
+    private void initCheckBoxView() {
+        cb_wc = (CheckBox) findViewById(R.id.click_cb_wc);
+        cb_wwc = (CheckBox) findViewById(R.id.click_cb_wwc);
+        //监听选中取消事件
+        cb_wc.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked){
+                    cb_wc.setChecked(true);
+                    cb_wwc.setChecked(false);
+                    UpdateStrategy2Server updateStrategy2Server = new UpdateStrategy2Server();
+                    updateStrategy2Server.execute();
+                }else {
+                    cb_wc.setChecked(false);
+                }
+            }
+        });
+        cb_wwc.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked){
+                    cb_wwc.setChecked(true);
+                    cb_wc.setChecked(false);
+                    UpdateStrategy2Server updateStrategy2Server = new UpdateStrategy2Server();
+                    updateStrategy2Server.execute();
+                }else {
+                    cb_wwc.setChecked(false);
+                }
+            }
+        });
     }
 
     @SuppressLint("InvalidWakeLockTag")
@@ -186,52 +224,134 @@ public class MyActivity extends AppCompatActivity {
         //execute test cases if patch is succeffully installed
         Tinker tinker = Tinker.with(context);
         System.out.println("=============================[tinker.isTinkerLoaded():]" + tinker.isTinkerLoaded());
-        //if (tinker.isTinkerLoaded() && hasUnexecutedTest()) {
         if(tinker.isTinkerLoaded()){
             //check if there is Unexecuted tests. Only some tests haven't been executed, then we need to run them.
-            hasUnexecutedTest();
+            HasUnexecutedTestTask hasUnexecutedTestTask = new HasUnexecutedTestTask();
+            hasUnexecutedTestTask.execute();
         }
 
     }
 
-    public void hasUnexecutedTest(){
-        //collect tests from dex files
-        List<String> allTestCaseClasses = getTestFromDex();
+    public class UpdateStrategy2Server extends AsyncTask<String, Integer, String> {
+        @Override
+        protected String doInBackground(String... strings) {
+            DeviceInfo deviceInfo = new DeviceInfo(context);
+            deviceInfo.setDeviceId(deviceId);
+            deviceInfo.setDispatchStrategy(getStrategy());
 
-        //collect executed tests from server
-        OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
-                .writeTimeout(1, TimeUnit.MINUTES)
-                .readTimeout(1, TimeUnit.MINUTES);
-        RequestBody requestBody = new FormBody.Builder()
-                .add("deviceId", deviceId)
-                .build();
-        Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/collectExecutedTests").post(requestBody).build();
-        builder.build().newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                Log.d(TAG, "【collectExecutedTests】request Failure. Exception:" + e);
-            }
-
-            @Override
-            public void onResponse(Call call, final Response response) throws IOException {
-                Log.d(TAG, "【collectExecutedTests】request success. ");
-                System.out.println("========response.body()====="+response.body());
-                Gson gson = new Gson();
-                executedTestCaseIds = gson.fromJson(response.body().string(), new ArrayList<String>().getClass());
-
-                for(String testCaseId : allTestCaseClasses){
-                    if(!executedTestCaseIds.contains(testCaseId)){
-                        //entrance of executing test
-                        pb_2.setAnimRun(true);
-                        startCrowdTestingButton.setEnabled(false);
-                        HighPriorityTask highPriorityTask = new HighPriorityTask();
-                        highPriorityTask.execute(deviceId);
-                    }
+            OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
+                    .writeTimeout(1, TimeUnit.MINUTES)
+                    .readTimeout(1, TimeUnit.MINUTES);
+            RequestBody requestBody = new FormBody.Builder()
+                    .add("deviceInfo", deviceInfo.toString())
+                    .build();
+            Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/updateDevice").post(requestBody).build();
+            builder.build().newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Log.d(TAG, "【UpdateStrategy2Server】request Failure. Exception:" + e);
                 }
 
-            }
-        });
+                @Override
+                public void onResponse(Call call, final Response response) throws IOException {
+                    Log.d(TAG, "【UpdateStrategy2Server】request success. ");
+                }
+            });
 
+            return "finish UpdateStrategy2Server";
+        }
+    }
+
+    public class UpdateStrategyCheckBox extends AsyncTask<String, Integer, String> {
+        @Override
+        protected String doInBackground(String... strings) {
+            OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
+                    .writeTimeout(1, TimeUnit.MINUTES)
+                    .readTimeout(1, TimeUnit.MINUTES);
+            RequestBody requestBody = new FormBody.Builder()
+                    .add("deviceId", deviceId)
+                    .build();
+            Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/checkDispatchStrategy").post(requestBody).build();
+            builder.build().newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Log.d(TAG, "【updateStrategyCheckBox】request Failure. Exception:" + e);
+                }
+
+                @Override
+                public void onResponse(Call call, final Response response) throws IOException {
+                    Log.d(TAG, "【updateStrategyCheckBox】request success. ");
+                    System.out.println("========response.body()====="+response.body());
+                    dispatchStrategy = Integer.valueOf(response.body().string());
+                }
+            });
+
+            return "finish updateStrategyCheckBox";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            Log.i("updateStrategyCheckBox", "onPostExecute");
+            if(dispatchStrategy == 2){
+                cb_wwc.setChecked(true);
+                cb_wc.setChecked(false);
+            }
+            if(dispatchStrategy == 1){
+                cb_wwc.setChecked(false);
+                cb_wc.setChecked(true);
+            }
+        }
+    }
+
+    public class HasUnexecutedTestTask extends AsyncTask<String, Integer, String> {
+        @Override
+        protected String doInBackground(String... strings) {
+            //collect executed tests from server
+            OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
+                    .writeTimeout(1, TimeUnit.MINUTES)
+                    .readTimeout(1, TimeUnit.MINUTES);
+            RequestBody requestBody = new FormBody.Builder()
+                    .add("deviceId", deviceId)
+                    .add("dispatchStrategy", String.valueOf(getStrategy()))
+                    .build();
+            Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/collectExecutedTests").post(requestBody).build();
+            builder.build().newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Log.d(TAG, "【collectExecutedTests】request Failure. Exception:" + e);
+                }
+
+                @Override
+                public void onResponse(Call call, final Response response) throws IOException {
+                    Log.d(TAG, "【collectExecutedTests】request success. ");
+                    System.out.println("========response.body()====="+response.body());
+                    Gson gson = new Gson();
+                    executedTestCaseIds = gson.fromJson(response.body().string(), new ArrayList<String>().getClass());
+                }
+            });
+
+            return "finish HasUnexecutedTestTask";
+        }
+
+
+        @Override
+        protected void onPostExecute(String result) {
+            Log.i("HasUnexecutedTestTask", "onPostExecute");
+            List<String> allTestCaseClasses = getTestFromDex();
+            if(dispatchStrategy == 2){
+                int lastExecutedTestIndex = allTestCaseClasses.indexOf(executedTestCaseIds.get(executedTestCaseIds.size() - 1));
+                allTestCaseClasses.subList(((lastExecutedTestIndex / 500)+1)*500, allTestCaseClasses.size());
+            }else if(dispatchStrategy == 1){
+                allTestCaseClasses.removeAll(executedTestCaseIds);
+            }
+            if(CollectionUtils.isNotEmpty(allTestCaseClasses)){
+                //entrance of executing test
+                pb_2.setAnimRun(true);
+                startCrowdTestingButton.setEnabled(false);
+                HighPriorityTask highPriorityTask = new HighPriorityTask();
+                highPriorityTask.execute(deviceId);
+            }
+        }
     }
 
     public void generatePatchAPK() {
@@ -241,11 +361,12 @@ public class MyActivity extends AppCompatActivity {
         DeviceInfo deviceInfo = new DeviceInfo(context);
         deviceInfo.setDeviceId(deviceId);
 
-        OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
-                .writeTimeout(5, TimeUnit.MINUTES)
-                .readTimeout(5, TimeUnit.MINUTES);
+        OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.MINUTES)
+                .readTimeout(10, TimeUnit.MINUTES);
         RequestBody requestBody = new FormBody.Builder()
                 .add("deviceInfo", deviceInfo.toString())
+                .add("dispatchStrategy", String.valueOf(getStrategy()))
                 .build();
         Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/generatePatchAPK").post(requestBody).build();
         builder.build().newCall(request).enqueue(new Callback() {
@@ -262,6 +383,18 @@ public class MyActivity extends AppCompatActivity {
                 pb_2.setProgress(100);
             }
         });
+    }
+
+    private int getStrategy(){
+        cb_wc = (CheckBox) findViewById(R.id.click_cb_wc);
+        cb_wwc = (CheckBox) findViewById(R.id.click_cb_wwc);
+
+        if(cb_wc.isChecked() && !cb_wwc.isChecked()){
+            return 1;
+        }else if(!cb_wc.isChecked() && cb_wwc.isChecked()){
+            return 2;
+        }
+        return 1;
     }
 
     private void writePatchAPKToExternalStorage(Response response, String fileName) {
@@ -337,7 +470,7 @@ public class MyActivity extends AppCompatActivity {
             Log.i("HighPriorityTask", result );
             textview.setText("Finished!");
             pb_2.setProgress(100);
-            startCrowdTestingButton.setEnabled(false);
+            startCrowdTestingButton.setEnabled(true);
             if (pb_2.getProgress() >= 100) {
                 //stop animation
                 pb_2.setAnimRun(false);
@@ -358,7 +491,13 @@ public class MyActivity extends AppCompatActivity {
             System.out.println("=============================[Start run test cases]");
             //step1. collect all test cases from DexFile
             List<String> allTestCaseClasses = getTestFromDex();
-
+            allTestCaseClasses.removeAll(executedTestCaseIds);
+            for(String s : executedTestCaseIds){
+                System.out.println("==========================executedTestCaseIds================================="+s);
+            }
+            for(String s : allTestCaseClasses){
+                System.out.println("==========================allTestCaseClasses================================="+s);
+            }
             //step2. execute test cases
             executeTests(allTestCaseClasses);
 
@@ -434,13 +573,13 @@ public class MyActivity extends AppCompatActivity {
                 } catch (Exception e) {
                     e.printStackTrace();
                     System.out.println("==========================Test Case fail==========================class:" + testCaseClass + "; mehotd:" + method);
-                    TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, false, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), ExceptionUtils.getStackTrace(e));
+                    TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, false, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), ExceptionUtils.getStackTrace(e), dispatchStrategy);
                     jsonArray.put(testCaseRecord.toJson());
                     postResult(deviceId, testCaseRecord);
                     return;
                 }
                 System.out.println("==========================Test Case success==========================class:" + testCaseClass + "; mehotd:" + method);
-                TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, true, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), successText);
+                TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, true, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), successText, dispatchStrategy);
                 jsonArray.put(testCaseRecord.toJson());
                 postResult(deviceId, testCaseRecord);
 //                }
@@ -566,21 +705,20 @@ public class MyActivity extends AppCompatActivity {
             return isTestFlag;
         }
 
-        private TestCaseRecord constructTestCaseRecord(String deviceId, boolean isSuccess, String testCaseName, String res) {
+        private TestCaseRecord constructTestCaseRecord(String deviceId, boolean isSuccess, String testCaseName, String res, int hasStrategy2Tests) {
             TestCaseRecord testCaseRecord = new TestCaseRecord();
 
             testCaseRecord.setSuccess(isSuccess);
             testCaseRecord.setDeviceId(deviceId);
             testCaseRecord.setTestCaseName(testCaseName);
             testCaseRecord.setResult(res);
-
+            testCaseRecord.setDispatchStrategy(hasStrategy2Tests);
             return testCaseRecord;
         }
 
 
     }
 
-    @NonNull
     private List<String> getTestFromDex() {
         List<String> allTestCaseClasses = new ArrayList<>();
         allTestCaseClasses.addAll(DexUtils.findClassesStartEndWith(testCasePrefix, firstTestEndfix));
