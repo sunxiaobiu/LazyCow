@@ -28,8 +28,10 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
+import android.widget.Spinner;
+import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -58,7 +60,6 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import at.markushi.ui.CircleButton;
@@ -72,6 +73,7 @@ import okhttp3.Response;
 import tinker.sample.android.GlobalRef;
 import tinker.sample.android.R;
 import tinker.sample.android.model.DeviceInfo;
+import tinker.sample.android.model.DispatchStrategy;
 import tinker.sample.android.model.TestCaseRecord;
 import tinker.sample.android.model.TestClassFile;
 import tinker.sample.android.receiver.PatchUpgradeReceiver;
@@ -101,10 +103,9 @@ public class MyActivity extends AppCompatActivity {
     private PowerManager.WakeLock mWakeLock;
     private static final int THREAD_ID = 10000;
     private JSONArray jsonArray = new JSONArray();
-    List<String> executedTestCaseIds = new ArrayList<>();
-    private Integer dispatchStrategy;
-    private CheckBox cb_wc;
-    private CheckBox cb_wwc;
+    List<String> batchTestCaseIds = new ArrayList<>();
+    private Integer dispatchStrategyBatchSize;
+    private Spinner spinnerItems;
 
     @SuppressLint("InvalidWakeLockTag")
     @Override
@@ -129,7 +130,7 @@ public class MyActivity extends AppCompatActivity {
         pb_2.setDrawableIds(new int[]{R.drawable.i00, R.drawable.i01, R.drawable.i02, R.drawable.i03, R.drawable.i04, R.drawable.i05, R.drawable.i06});
         pb_2.setAnimRun(false);
 
-        initCheckBoxView();
+        initDispatchStrategySpinner();
 
         startCrowdTestingButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -162,36 +163,19 @@ public class MyActivity extends AppCompatActivity {
         }
     }
 
-    private void initCheckBoxView() {
-        cb_wc = (CheckBox) findViewById(R.id.click_cb_wc);
-        cb_wwc = (CheckBox) findViewById(R.id.click_cb_wwc);
-        //监听选中取消事件
-        cb_wc.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+    private void initDispatchStrategySpinner() {
+        spinnerItems = (Spinner) findViewById(R.id.action_bar_spinner);
+        spinnerItems.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked){
-                    cb_wc.setChecked(true);
-                    cb_wwc.setChecked(false);
-                    UpdateStrategy2Server updateStrategy2Server = new UpdateStrategy2Server();
-                    updateStrategy2Server.execute();
-                    dispatchStrategy = 1;
-                }else {
-                    cb_wc.setChecked(false);
-                }
+            public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+                String[] dispatchStrategies = getResources().getStringArray(R.array.dispatchStrategyClass);
+                dispatchStrategyBatchSize = Integer.valueOf(dispatchStrategies[pos]);
+                UpdateStrategy2Server updateStrategy2Server = new UpdateStrategy2Server();
+                updateStrategy2Server.execute();
             }
-        });
-        cb_wwc.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked){
-                    cb_wwc.setChecked(true);
-                    cb_wc.setChecked(false);
-                    UpdateStrategy2Server updateStrategy2Server = new UpdateStrategy2Server();
-                    updateStrategy2Server.execute();
-                    dispatchStrategy = 2;
-                }else {
-                    cb_wwc.setChecked(false);
-                }
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Another interface callback
             }
         });
     }
@@ -248,7 +232,7 @@ public class MyActivity extends AppCompatActivity {
         protected String doInBackground(String... strings) {
             DeviceInfo deviceInfo = new DeviceInfo(context);
             deviceInfo.setDeviceId(deviceId);
-            deviceInfo.setDispatchStrategy(dispatchStrategy);
+            deviceInfo.setDispatchStrategy(dispatchStrategyBatchSize);
 
             OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
                     .writeTimeout(1, TimeUnit.MINUTES)
@@ -292,26 +276,23 @@ public class MyActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(Call call, final Response response) throws IOException {
                     Log.d(TAG, "【updateStrategyCheckBox】request success. ");
-                    dispatchStrategy = Integer.valueOf(response.body().string());
+                    dispatchStrategyBatchSize = Integer.valueOf(response.body().string());
                 }
             });
-
             return "dispatchStrategy finish";
         }
 
         @Override
         protected void onPostExecute(String res) {
             Log.i("updateStrategyCheckBox", "onPostExecute");
-            cb_wc = (CheckBox) findViewById(R.id.click_cb_wc);
-            cb_wwc = (CheckBox) findViewById(R.id.click_cb_wwc);
-
-            if(dispatchStrategy == 2){
-                cb_wwc.setChecked(true);
-                cb_wc.setChecked(false);
-            }
-            if(dispatchStrategy == 1){
-                cb_wwc.setChecked(false);
-                cb_wc.setChecked(true);
+            spinnerItems = (Spinner) findViewById(R.id.action_bar_spinner);
+            SpinnerAdapter apsAdapter= spinnerItems.getAdapter();  //得到SpinnerAdapter对象
+            int  k= apsAdapter.getCount();
+            for ( int  i= 0 ;i<k;i++){
+                if (dispatchStrategyBatchSize.toString().equals(apsAdapter.getItem(i).toString())){
+                    spinnerItems.setSelection(i);
+                    break ;
+                }
             }
 
             startTask2executeTestCases();
@@ -328,7 +309,7 @@ public class MyActivity extends AppCompatActivity {
             RequestBody requestBody = new FormBody.Builder()
                     .add("deviceId", deviceId)
                     .build();
-            Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/collectExecutedTests").post(requestBody).build();
+            Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/collectBatchTests").post(requestBody).build();
             builder.build().newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
@@ -342,28 +323,18 @@ public class MyActivity extends AppCompatActivity {
                     String str = response.body().string();
                     if(StringUtils.isNotEmpty(str)){
                         System.out.println("============str==========="+str);
-                        executedTestCaseIds = gson.fromJson(str, new ArrayList<String>().getClass());
+                        batchTestCaseIds = gson.fromJson(str, new ArrayList<String>().getClass());
                     }
                 }
             });
-
-            return dispatchStrategy;
+            return dispatchStrategyBatchSize;
         }
 
 
         @Override
         protected void onPostExecute(Integer dispatchStrategy) {
             Log.i("HasUnexecutedTestTask", "onPostExecute");
-            List<String> allTestCaseClasses = getTestFromDex();
-            if(CollectionUtils.isNotEmpty(executedTestCaseIds)){
-                if(dispatchStrategy == 2){
-                    int lastExecutedTestIndex = allTestCaseClasses.indexOf(executedTestCaseIds.get(executedTestCaseIds.size() - 1));
-                    allTestCaseClasses.subList(((lastExecutedTestIndex / 500)+1)*500, allTestCaseClasses.size());
-                }else if(dispatchStrategy == 1){
-                    allTestCaseClasses.removeAll(executedTestCaseIds);
-                }
-            }
-            if(CollectionUtils.isNotEmpty(allTestCaseClasses)){
+            if(CollectionUtils.isNotEmpty(batchTestCaseIds)){
                 //entrance of executing test
                 pb_2.setAnimRun(true);
                 startCrowdTestingButton.setEnabled(false);
@@ -379,7 +350,11 @@ public class MyActivity extends AppCompatActivity {
 
         DeviceInfo deviceInfo = new DeviceInfo(context);
         deviceInfo.setDeviceId(deviceId);
-        deviceInfo.setDispatchStrategy(dispatchStrategy);
+        deviceInfo.setDispatchStrategy(dispatchStrategyBatchSize);
+
+        DispatchStrategy dispatchStrategy = new DispatchStrategy();
+        dispatchStrategy.setDeviceId(deviceId);
+        dispatchStrategy.setBatchSize(dispatchStrategyBatchSize);
 
         OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS)
                 .writeTimeout(10, TimeUnit.MINUTES)
@@ -499,15 +474,16 @@ public class MyActivity extends AppCompatActivity {
             System.out.println("=============================[Start run test cases]");
             //step1. collect all test cases from DexFile
             List<String> allTestCaseClasses = getTestFromDex();
-            allTestCaseClasses.removeAll(executedTestCaseIds);
-            for(String s : executedTestCaseIds){
-                System.out.println("==========================executedTestCaseIds================================="+s);
+            List<String> needExecutedTests = new ArrayList<>();
+            for(String s : batchTestCaseIds){
+                System.out.println("==========================batchTestCaseIds================================="+s);
+                if(allTestCaseClasses.contains(s)){
+                    needExecutedTests.add(s);
+                }
             }
-            for(String s : allTestCaseClasses){
-                System.out.println("==========================allTestCaseClasses================================="+s);
-            }
+
             //step2. execute test cases
-            executeTests(allTestCaseClasses);
+            executeTests(needExecutedTests);
 
             //System.out.println("=============================[start cleanPatch]");
             //delete patch apk
@@ -532,6 +508,11 @@ public class MyActivity extends AppCompatActivity {
                 }
             }
             System.out.println("==========================End Test Case=================================");
+
+            pb_2.setAnimRun(true);
+            textview.setText("Initializing...");
+            startCrowdTestingButton.setEnabled(false);
+            generatePatchAPK();
         }
 
         public void executeSingelTest(final String testCaseClass) throws JSONException {
@@ -581,13 +562,13 @@ public class MyActivity extends AppCompatActivity {
                 } catch (Exception e) {
                     e.printStackTrace();
                     System.out.println("==========================Test Case fail==========================class:" + testCaseClass + "; mehotd:" + method);
-                    TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, false, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), ExceptionUtils.getStackTrace(e), dispatchStrategy);
+                    TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, false, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), ExceptionUtils.getStackTrace(e), dispatchStrategyBatchSize);
                     jsonArray.put(testCaseRecord.toJson());
                     postResult(deviceId, testCaseRecord);
                     return;
                 }
                 System.out.println("==========================Test Case success==========================class:" + testCaseClass + "; mehotd:" + method);
-                TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, true, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), successText, dispatchStrategy);
+                TestCaseRecord testCaseRecord = constructTestCaseRecord(deviceId, true, testCaseClass.replace(androidTestPackage + packageSeperator, "") + "." + method.getName(), successText, dispatchStrategyBatchSize);
                 jsonArray.put(testCaseRecord.toJson());
                 postResult(deviceId, testCaseRecord);
 //                }
