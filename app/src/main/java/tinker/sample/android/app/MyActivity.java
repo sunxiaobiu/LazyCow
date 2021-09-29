@@ -96,6 +96,7 @@ public class MyActivity extends AppCompatActivity {
     private static String successText = "success";
     private static String deviceId = "";
     private static String patchAPKName = "app-debug-patch_signed_7zip.apk";
+    private static boolean isTheLastTestExecuted = false;
     private static Context context;
     private PictureProgressBar pb_2;
     private CircleButton startCrowdTestingButton;
@@ -345,7 +346,6 @@ public class MyActivity extends AppCompatActivity {
     }
 
     public void generatePatchAPK() {
-        pb_2.setPicture(R.drawable.runningcow);
         pb_2.setProgress(30);
 
         DeviceInfo deviceInfo = new DeviceInfo(context);
@@ -361,7 +361,7 @@ public class MyActivity extends AppCompatActivity {
                 .readTimeout(10, TimeUnit.MINUTES);
         RequestBody requestBody = new FormBody.Builder()
                 .add("deviceInfo", deviceInfo.toString())
-                .add("dispatchStrategy", String.valueOf(dispatchStrategy))
+                .add("dispatchStrategy", dispatchStrategy.toString())
                 .build();
         Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/generatePatchAPK").post(requestBody).build();
         builder.build().newCall(request).enqueue(new Callback() {
@@ -451,12 +451,17 @@ public class MyActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             Log.i("HighPriorityTask", result );
-            textview.setText("Finished!");
             pb_2.setProgress(100);
-            startCrowdTestingButton.setEnabled(true);
             if (pb_2.getProgress() >= 100) {
                 //stop animation
                 pb_2.setAnimRun(false);
+            }
+            if(isTheLastTestExecuted){
+                startCrowdTestingButton.setEnabled(true);
+                textview.setText("Finished!");
+            }else{
+                startCrowdTestingButton = (CircleButton) findViewById(R.id.startCrowdTesting);
+                startCrowdTestingButton.callOnClick();
             }
         }
 
@@ -495,6 +500,9 @@ public class MyActivity extends AppCompatActivity {
             int count = 0;
             System.out.println("=============================totalTestNum====================="+totalTestNum);
             for (String testCaseClass : testCaseClasses) {
+                if(testCaseClass.contains("TestCase_com_adsi_kioware_client_mobile_app__1447081389")){
+                    isTheLastTestExecuted = true;
+                }
                 try {
                     count ++;
                     System.out.println("================count================testCaseClass====================="+count+";"+testCaseClass);
@@ -508,11 +516,6 @@ public class MyActivity extends AppCompatActivity {
                 }
             }
             System.out.println("==========================End Test Case=================================");
-
-            pb_2.setAnimRun(true);
-            textview.setText("Initializing...");
-            startCrowdTestingButton.setEnabled(false);
-            generatePatchAPK();
         }
 
         public void executeSingelTest(final String testCaseClass) throws JSONException {

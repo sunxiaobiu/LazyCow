@@ -1,5 +1,7 @@
 package tinker.sample.android.model;
 
+import org.json.JSONObject;
+
 import java.util.Date;
 
 public class DispatchStrategy {
@@ -58,15 +60,20 @@ public class DispatchStrategy {
         this.batchSize = batchSize;
     }
 
-    public String toString(){
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("id:").append(this.id).append(";")
-                .append("deviceId:").append(this.deviceId).append(";")
-                .append("createTime:").append(this.createTime).append(";")
-                .append("startId:").append(this.startId).append(";")
-                .append("endId:").append(this.endId).append(";")
-                .append("batchSize:").append(this.batchSize).append(";");
-        return stringBuilder.toString();
+    public String toString() {
+        String dispatchStrategy = "";
+        try {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("deviceId", getDeviceId());
+            jsonObject.put("startId", getStartId());
+            jsonObject.put("endId", getEndId());
+            jsonObject.put("batchSize", getBatchSize());
+            dispatchStrategy = jsonObject.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return dispatchStrategy;
     }
 
 }
