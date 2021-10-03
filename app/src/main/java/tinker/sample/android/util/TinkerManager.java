@@ -16,6 +16,8 @@
 
 package tinker.sample.android.util;
 
+import android.content.Context;
+
 import com.tencent.tinker.lib.listener.PatchListener;
 import com.tencent.tinker.lib.patch.AbstractPatch;
 import com.tencent.tinker.lib.patch.UpgradePatch;
@@ -50,9 +52,9 @@ public class TinkerManager {
         return applicationLike;
     }
 
-    public static void initFastCrashProtect() {
+    public static void initFastCrashProtect(Context context, Class<?> c) {
         if (uncaughtExceptionHandler == null) {
-            uncaughtExceptionHandler = new SampleUncaughtExceptionHandler();
+            uncaughtExceptionHandler = new SampleUncaughtExceptionHandler(context, c);
             Thread.setDefaultUncaughtExceptionHandler(uncaughtExceptionHandler);
         }
     }

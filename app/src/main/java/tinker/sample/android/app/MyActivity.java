@@ -72,6 +72,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import tinker.sample.android.GlobalRef;
 import tinker.sample.android.R;
+import tinker.sample.android.crash.SampleUncaughtExceptionHandler;
 import tinker.sample.android.model.DeviceInfo;
 import tinker.sample.android.model.DispatchStrategy;
 import tinker.sample.android.model.TestCaseRecord;
@@ -119,7 +120,8 @@ public class MyActivity extends AppCompatActivity {
         //test resource change
         Log.e(TAG, "i am on onCreate string:" + getResources().getString(R.string.test_resource));
 
-        Thread.setDefaultUncaughtExceptionHandler(new TopExceptionHandler(this));
+//        Thread.setDefaultUncaughtExceptionHandler(new SampleUncaughtExceptionHandler(this,
+//                MyActivity.class));
 
         startCrowdTestingButton = (CircleButton) findViewById(R.id.startCrowdTesting);
 
@@ -225,7 +227,6 @@ public class MyActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-
     }
 
     public class UpdateStrategy2Server extends AsyncTask<String, Integer, String> {
@@ -323,7 +324,6 @@ public class MyActivity extends AppCompatActivity {
                     Gson gson = new Gson();
                     String str = response.body().string();
                     if(StringUtils.isNotEmpty(str)){
-                        System.out.println("============str==========="+str);
                         batchTestCaseIds = gson.fromJson(str, new ArrayList<String>().getClass());
                     }
                 }
@@ -481,7 +481,6 @@ public class MyActivity extends AppCompatActivity {
             List<String> allTestCaseClasses = getTestFromDex();
             List<String> needExecutedTests = new ArrayList<>();
             for(String s : batchTestCaseIds){
-                System.out.println("==========================batchTestCaseIds================================="+s);
                 if(allTestCaseClasses.contains(s)){
                     needExecutedTests.add(s);
                 }

@@ -133,6 +133,7 @@
             android:exported="false"/>
 
         <activity android:name=".app.MyActivity"
+                  android:exported="true"
                   android:launchMode = "singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

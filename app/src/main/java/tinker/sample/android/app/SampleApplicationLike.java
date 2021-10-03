@@ -30,10 +30,10 @@ import com.tencent.tinker.entry.DefaultApplicationLike;
 import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
-
-import org.lsposed.hiddenapibypass.HiddenApiBypass;
+import com.zxy.recovery.core.Recovery;
 
 import tinker.sample.android.Log.MyLogImp;
+import tinker.sample.android.crash.MyCrashCallback;
 import tinker.sample.android.util.SampleApplicationContext;
 import tinker.sample.android.util.TinkerManager;
 
@@ -88,7 +88,7 @@ public class SampleApplicationLike extends DefaultApplicationLike {
         SampleApplicationContext.context = getApplication();
         TinkerManager.setTinkerApplicationLike(this);
 
-        TinkerManager.initFastCrashProtect();
+        TinkerManager.initFastCrashProtect(getApplication(), MyActivity.class);
         //should set before tinker is installed
         TinkerManager.setUpgradeRetryEnable(true);
 
@@ -104,6 +104,22 @@ public class SampleApplicationLike extends DefaultApplicationLike {
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     public void registerActivityLifecycleCallbacks(Application.ActivityLifecycleCallbacks callback) {
         getApplication().registerActivityLifecycleCallbacks(callback);
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        //init crash recovery instance(https://github.com/Sunzxyong/Recovery)
+        Recovery.getInstance()
+                .debug(true)
+                .recoverInBackground(true)
+                .recoverStack(true)
+                .mainPage(MyActivity.class)
+                .recoverEnabled(true)
+                .callback(new MyCrashCallback())
+                .silent(true, Recovery.SilentMode.RECOVER_ACTIVITY_STACK)
+                .init(getApplication());
     }
 
 }

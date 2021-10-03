@@ -17,15 +17,21 @@
 package tinker.sample.android.crash;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.SystemClock;
 
+import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.lib.tinker.TinkerApplicationHelper;
 import com.tencent.tinker.lib.util.TinkerLog;
-import com.tencent.tinker.entry.ApplicationLike;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
 import com.tencent.tinker.loader.shareutil.ShareTinkerInternals;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
+import tinker.sample.android.app.MyActivity;
 import tinker.sample.android.reporter.SampleTinkerReport;
 import tinker.sample.android.util.TinkerManager;
 import tinker.sample.android.util.Utils;
@@ -46,16 +52,38 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
     public static final  int    MAX_CRASH_COUNT     = 3;
     private static final String DALVIK_XPOSED_CRASH = "Class ref in pre-verified class resolved to unexpected implementation";
 
-    public SampleUncaughtExceptionHandler() {
+    private final Context myContext;
+    private final Class<?> myActivityClass;
+
+    public SampleUncaughtExceptionHandler(Context context, Class<?> c) {
         ueh = Thread.getDefaultUncaughtExceptionHandler();
+        myContext = context;
+        myActivityClass = c;
     }
 
     @Override
-    public void uncaughtException(Thread thread, Throwable ex) {
-        TinkerLog.e(TAG, "uncaughtException:" + ex.getMessage());
-        tinkerFastCrashProtect();
-        tinkerPreVerifiedCrashHandler(ex);
-        ueh.uncaughtException(thread, ex);
+    public void uncaughtException(Thread thread, Throwable exception) {
+        TinkerLog.e(TAG, "uncaughtException:" + exception.getMessage());
+//        tinkerFastCrashProtect();
+//        tinkerPreVerifiedCrashHandler(ex);
+//        ueh.uncaughtException(thread, ex);
+
+//        ApplicationLike applicationLike = TinkerManager.getTinkerApplicationLike();
+//        StringWriter stackTrace = new StringWriter();
+//        exception.printStackTrace(new PrintWriter(stackTrace));
+//        System.err.println("======================stackTrace========================"+stackTrace);// You can use LogCat too
+//        Intent intent = new Intent(applicationLike.getApplication(), MyActivity.class);
+//        String s = stackTrace.toString();
+//        //you can use this String to know what caused the exception and in which Activity
+//        intent.putExtra("uncaughtException",
+//                "Exception is: " + stackTrace.toString());
+//        intent.putExtra("stacktrace", s);
+//        System.err.println("======================before startActivity========================"+stackTrace);// You can use LogCat too
+//        applicationLike.getApplication().startActivity(intent);
+//        System.err.println("======================end startActivity========================"+stackTrace);// You can use LogCat too
+//        //for restarting the Activity
+//        android.os.Process.killProcess(android.os.Process.myPid());
+//        System.exit(0);
     }
 
     /**

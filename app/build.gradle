@@ -104,6 +104,7 @@ dependencies {
     implementation 'com.yanzhikaijky:PictureProgressbar:1.2.0'
     implementation 'com.google.code.gson:gson:2.8.7'
 
+    implementation 'com.zxy.android:recovery:1.0.0'
 }
 
 def gitSha() {
