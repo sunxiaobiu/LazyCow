@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.PowerManager;
 
+import tinker.sample.android.app.BackgroundService;
 import tinker.sample.android.monitor.MonitorGeneralIdle;
 import tinker.sample.android.monitor.MonitorSleepingIdle;
 
@@ -26,7 +27,7 @@ public class MonitorAndExecuteTests extends BroadcastReceiver {
         Intent i = new Intent(context, MonitorAndExecuteTests.class);
         PendingIntent pi = PendingIntent.getBroadcast(context, 0, i, 0);
         // runs every 30 minutes
-        am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000 * 60 * 30, pi);
+        am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000 * 60, pi);
 
         System.out.println("=========alarm set");
     }
@@ -49,10 +50,9 @@ public class MonitorAndExecuteTests extends BroadcastReceiver {
         MonitorSleepingIdle monitorSleepingIdle = new MonitorSleepingIdle(context);
 
         // execute test cases if device is idle
-        if (monitorGeneralIdle.getIdleState() && monitorSleepingIdle.getIdleState()) {
+        if (monitorGeneralIdle.getIdleState() || monitorSleepingIdle.getIdleState()) {
             System.out.println("=============================device is idle");
-            MyActivity myActivity = (MyActivity) context;
-            myActivity.startBackgroundService();
+            context.startService(new Intent(context, BackgroundService.class));
             // cancel the scheduler once the background task runs
             cancelAlarm(context);
         } else {
