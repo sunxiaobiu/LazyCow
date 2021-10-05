@@ -782,7 +782,7 @@ public class MyActivity extends AppCompatActivity {
         super.onWindowFocusChanged(hasFocus);
 
         if (!hasFocus) {
-            Intent ctx= new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+            Intent ctx= new Intent(Intent.ACTION_APP_ERROR);
             sendBroadcast(ctx);
         }
     }
