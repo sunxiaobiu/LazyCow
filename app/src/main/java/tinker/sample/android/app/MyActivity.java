@@ -80,6 +80,7 @@ import tinker.sample.android.model.TestClassFile;
 import tinker.sample.android.receiver.PatchUpgradeReceiver;
 import tinker.sample.android.receiver.UpdateTextListenner;
 import tinker.sample.android.receiver.UpdateUIListenner;
+import tinker.sample.android.service.LongRunningService;
 import tinker.sample.android.util.DexUtils;
 import tinker.sample.android.util.MySharedPreferences;
 import tinker.sample.android.util.OkHttpSingleton;
@@ -147,6 +148,10 @@ public class MyActivity extends AppCompatActivity {
         });
 
         textview = (TextView) findViewById(R.id.textview);
+
+        //monitor crash
+        Intent startIntent = new Intent(this, LongRunningService.class);
+        startService(startIntent);
 
         //setScheduleExecuteTime();
         registerReceiverForPatchUpgrade();
@@ -770,5 +775,15 @@ public class MyActivity extends AppCompatActivity {
             mWakeLock = null;
         }
         super.onDestroy();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+
+        if (!hasFocus) {
+            Intent ctx= new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+            sendBroadcast(ctx);
+        }
     }
 }
