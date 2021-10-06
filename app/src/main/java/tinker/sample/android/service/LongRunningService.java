@@ -2,11 +2,17 @@ package tinker.sample.android.service;
 
 import android.app.ActivityManager;
 import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -14,9 +20,13 @@ import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationCompat;
 
 import java.util.Date;
 import java.util.List;
+
+import tinker.sample.android.R;
 
 public class LongRunningService extends Service {
     public int anHour; //记录间隔时间
@@ -36,18 +46,20 @@ public class LongRunningService extends Service {
                 case 1:
                     if (checkPackInfo(packname)) {
                         boolean isAppRunningBefore = isAppRunning();
+                        Log.e("bai", "========================isAppRunningBefore:"+isAppRunningBefore);
                         try {
                             Thread.sleep(2000); //2s
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                         boolean isAppRunningAfter = isAppRunning();
+                        Log.e("bai", "========================isAppRunningAfter:"+isAppRunningAfter);
 
                         if (!isAppRunningBefore && !isAppRunningAfter) {
                             PackageManager packageManager = getPackageManager();
                             Intent intent = packageManager.getLaunchIntentForPackage(packname);
                             intent.putExtra("monitorCrashStart", "true");
-                            Log.e("LazyCowRestart", "====================isAppRunning  intent:" + intent);
+                            Log.e("bai", "====================isAppRunning  intent:" + intent);
                             startActivity(intent);
                         }
                     }
@@ -62,8 +74,8 @@ public class LongRunningService extends Service {
                     ActivityManager.RunningAppProcessInfo myProcess = processInfos.get(i);
                     ActivityManager.getMyMemoryState(myProcess);
                     Boolean isInBackground = myProcess.importance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
-                    Log.i("LazyCowisInBackground",
-                            String.format("=====================the %s is running, isAppAlive return:", !isInBackground));
+                    Log.i("bai",String.format("=====================the LazyCow is running"));
+                    Log.e("bai", "====================isInBackground" + isInBackground);
                     return !isInBackground;
                 }
             }

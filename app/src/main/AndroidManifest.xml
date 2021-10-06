@@ -150,18 +150,11 @@
                 <action android:name="com.finish.patch.downloadPatchAPK" />
             </intent-filter>
         </receiver>
-        <service
-            android:name=".service.LongRunningService"
-            android:enabled="true"
-            android:exported="true"/>
-        <receiver android:name=".service.AlarmReceiver"/>
-        <receiver android:name=".service.SystemDialogReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.ACTION_APP_ERROR" />
-            </intent-filter>
-        </receiver>
+<!--        <service-->
+<!--            android:name=".service.LongRunningService"-->
+<!--            android:enabled="true"-->
+<!--            android:exported="true"/>-->
+<!--        <receiver android:name=".service.AlarmReceiver"/>-->
     </application>
 
 </manifest>

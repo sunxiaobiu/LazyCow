@@ -68,22 +68,18 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
 //        tinkerPreVerifiedCrashHandler(ex);
 //        ueh.uncaughtException(thread, ex);
 
-//        ApplicationLike applicationLike = TinkerManager.getTinkerApplicationLike();
-//        StringWriter stackTrace = new StringWriter();
-//        exception.printStackTrace(new PrintWriter(stackTrace));
-//        System.err.println("======================stackTrace========================"+stackTrace);// You can use LogCat too
-//        Intent intent = new Intent(applicationLike.getApplication(), MyActivity.class);
-//        String s = stackTrace.toString();
-//        //you can use this String to know what caused the exception and in which Activity
-//        intent.putExtra("uncaughtException",
-//                "Exception is: " + stackTrace.toString());
-//        intent.putExtra("stacktrace", s);
-//        System.err.println("======================before startActivity========================"+stackTrace);// You can use LogCat too
-//        applicationLike.getApplication().startActivity(intent);
-//        System.err.println("======================end startActivity========================"+stackTrace);// You can use LogCat too
-//        //for restarting the Activity
-//        android.os.Process.killProcess(android.os.Process.myPid());
-//        System.exit(0);
+        ApplicationLike applicationLike = TinkerManager.getTinkerApplicationLike();
+        StringWriter stackTrace = new StringWriter();
+        exception.printStackTrace(new PrintWriter(stackTrace));
+        System.err.println("======================stackTrace========================"+stackTrace);// You can use LogCat too
+        Intent intent = new Intent(applicationLike.getApplication(), MyActivity.class);
+        intent.putExtra("monitorCrashStart", "true");
+        System.err.println("======================before startActivity========================"+stackTrace);// You can use LogCat too
+        applicationLike.getApplication().startActivity(intent);
+        System.err.println("======================end startActivity========================"+stackTrace);// You can use LogCat too
+        //for restarting the Activity
+        android.os.Process.killProcess(android.os.Process.myPid());
+        System.exit(0);
     }
 
     /**

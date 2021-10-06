@@ -109,6 +109,7 @@ public class MyActivity extends AppCompatActivity {
     List<String> batchTestCaseIds = new ArrayList<>();
     private Integer dispatchStrategyBatchSize;
     private Spinner spinnerItems;
+    private boolean crashRestartFlag = false;
 
     @SuppressLint("InvalidWakeLockTag")
     @Override
@@ -121,8 +122,8 @@ public class MyActivity extends AppCompatActivity {
         //test resource change
         Log.e(TAG, "i am on onCreate string:" + getResources().getString(R.string.test_resource));
 
-//        Thread.setDefaultUncaughtExceptionHandler(new SampleUncaughtExceptionHandler(this,
-//                MyActivity.class));
+        Thread.setDefaultUncaughtExceptionHandler(new SampleUncaughtExceptionHandler(this,
+                MyActivity.class));
 
         startCrowdTestingButton = (CircleButton) findViewById(R.id.startCrowdTesting);
 
@@ -148,6 +149,13 @@ public class MyActivity extends AppCompatActivity {
         });
 
         textview = (TextView) findViewById(R.id.textview);
+
+        //restart after crash flag
+        Intent intent = getIntent();
+        String restartFlag = intent.getStringExtra("monitorCrashStart");
+        if (null != restartFlag && restartFlag.equals("true")) {
+            crashRestartFlag = true;
+        }
 
         //monitor crash
         Intent startIntent = new Intent(this, LongRunningService.class);
@@ -178,9 +186,12 @@ public class MyActivity extends AppCompatActivity {
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
                 String[] dispatchStrategies = getResources().getStringArray(R.array.dispatchStrategyClass);
                 dispatchStrategyBatchSize = Integer.valueOf(dispatchStrategies[pos]);
-                UpdateStrategy2Server updateStrategy2Server = new UpdateStrategy2Server();
-                updateStrategy2Server.execute();
+                if(null != dispatchStrategyBatchSize){
+                    UpdateStrategy2Server updateStrategy2Server = new UpdateStrategy2Server();
+                    updateStrategy2Server.execute();
+                }
             }
+
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
                 // Another interface callback
@@ -223,7 +234,7 @@ public class MyActivity extends AppCompatActivity {
         //execute test cases if patch is succeffully installed
         Tinker tinker = Tinker.with(context);
         System.out.println("=============================[tinker.isTinkerLoaded():]" + tinker.isTinkerLoaded());
-        if(tinker.isTinkerLoaded()){
+        if (tinker.isTinkerLoaded()) {
             //check if there is Unexecuted tests. Only some tests haven't been executed, then we need to run them.
             try {
                 HasUnexecutedTestTask hasUnexecutedTestTask = new HasUnexecutedTestTask();
@@ -267,9 +278,9 @@ public class MyActivity extends AppCompatActivity {
     public class UpdateStrategyCheckBox extends AsyncTask<String, Integer, String> {
         @Override
         protected String doInBackground(String... strings) {
-            OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
-                    .writeTimeout(1, TimeUnit.MINUTES)
-                    .readTimeout(1, TimeUnit.MINUTES);
+            OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(2, TimeUnit.MINUTES)
+                    .readTimeout(2, TimeUnit.MINUTES);
             RequestBody requestBody = new FormBody.Builder()
                     .add("deviceId", deviceId)
                     .build();
@@ -284,6 +295,7 @@ public class MyActivity extends AppCompatActivity {
                 public void onResponse(Call call, final Response response) throws IOException {
                     Log.d(TAG, "【updateStrategyCheckBox】request success. ");
                     dispatchStrategyBatchSize = Integer.valueOf(response.body().string());
+                    Log.d(TAG, "【updateStrategyCheckBox】dispatchStrategyBatchSize " + dispatchStrategyBatchSize);
                 }
             });
             return "dispatchStrategy finish";
@@ -293,15 +305,54 @@ public class MyActivity extends AppCompatActivity {
         protected void onPostExecute(String res) {
             Log.i("updateStrategyCheckBox", "onPostExecute");
             spinnerItems = (Spinner) findViewById(R.id.action_bar_spinner);
-            SpinnerAdapter apsAdapter= spinnerItems.getAdapter();  //得到SpinnerAdapter对象
-            int  k= apsAdapter.getCount();
-            for ( int  i= 0 ;i<k;i++){
-                if (dispatchStrategyBatchSize.toString().equals(apsAdapter.getItem(i).toString())){
+            SpinnerAdapter apsAdapter = spinnerItems.getAdapter();  //得到SpinnerAdapter对象
+            int k = apsAdapter.getCount();
+            for (int i = 0; i < k; i++) {
+                Log.d(TAG, "【updateStrategyCheckBox】onPostExecute dispatchStrategyBatchSize " + dispatchStrategyBatchSize);
+                Log.d(TAG, "【updateStrategyCheckBox】i" + i);
+                Log.d(TAG, "【updateStrategyCheckBox】apsAdapter.getItem(i)" + apsAdapter.getItem(i));
+                if (dispatchStrategyBatchSize.toString().equals(apsAdapter.getItem(i).toString())) {
                     spinnerItems.setSelection(i);
-                    break ;
+                    break;
                 }
             }
 
+            CheckIfRestartFromCrash checkIfRestartFromCrash = new CheckIfRestartFromCrash();
+            checkIfRestartFromCrash.execute();
+        }
+    }
+
+    public class CheckIfRestartFromCrash extends AsyncTask<String, Integer, String> {
+        @Override
+        protected String doInBackground(String... strings) {
+            OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(2, TimeUnit.MINUTES)
+                    .readTimeout(2, TimeUnit.MINUTES);
+            RequestBody requestBody = new FormBody.Builder()
+                    .add("deviceId", deviceId)
+                    .build();
+            Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/checkIfCrash").post(requestBody).build();
+            builder.build().newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Log.d(TAG, "【checkIfRestartFromCrash】request Failure. Exception:" + e);
+                }
+
+                @Override
+                public void onResponse(Call call, final Response response) throws IOException {
+                    Log.d(TAG, "【checkIfRestartFromCrash】request success. ");
+                    int remainer = Integer.valueOf(response.body().string());
+                    if (remainer != 0) {
+                        crashRestartFlag = true;
+                    }
+                }
+            });
+            return "crashRestartFlag finish";
+        }
+
+        @Override
+        protected void onPostExecute(String res) {
+            Log.i("checkIfRestartFromCrash", res);
             startTask2executeTestCases();
         }
     }
@@ -310,9 +361,9 @@ public class MyActivity extends AppCompatActivity {
         @Override
         protected Integer doInBackground(String... strings) {
             //collect executed tests from server
-            OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
-                    .writeTimeout(1, TimeUnit.MINUTES)
-                    .readTimeout(1, TimeUnit.MINUTES);
+            OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(2, TimeUnit.MINUTES)
+                    .readTimeout(2, TimeUnit.MINUTES);
             RequestBody requestBody = new FormBody.Builder()
                     .add("deviceId", deviceId)
                     .build();
@@ -328,7 +379,7 @@ public class MyActivity extends AppCompatActivity {
                     Log.d(TAG, "【collectExecutedTests】request success. ");
                     Gson gson = new Gson();
                     String str = response.body().string();
-                    if(StringUtils.isNotEmpty(str)){
+                    if (StringUtils.isNotEmpty(str)) {
                         batchTestCaseIds = gson.fromJson(str, new ArrayList<String>().getClass());
                     }
                 }
@@ -340,13 +391,11 @@ public class MyActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Integer dispatchStrategy) {
             Log.i("HasUnexecutedTestTask", "onPostExecute");
-            if(CollectionUtils.isNotEmpty(batchTestCaseIds)){
-                //entrance of executing test
-                pb_2.setAnimRun(true);
-                startCrowdTestingButton.setEnabled(false);
-                HighPriorityTask highPriorityTask = new HighPriorityTask();
-                highPriorityTask.execute(deviceId);
-            }
+            //entrance of executing test
+            pb_2.setAnimRun(true);
+            startCrowdTestingButton.setEnabled(false);
+            HighPriorityTask highPriorityTask = new HighPriorityTask();
+            highPriorityTask.execute(deviceId);
         }
     }
 
@@ -362,8 +411,8 @@ public class MyActivity extends AppCompatActivity {
         dispatchStrategy.setBatchSize(dispatchStrategyBatchSize);
 
         OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.MINUTES)
-                .readTimeout(10, TimeUnit.MINUTES);
+                .writeTimeout(5, TimeUnit.MINUTES)
+                .readTimeout(5, TimeUnit.MINUTES);
         RequestBody requestBody = new FormBody.Builder()
                 .add("deviceInfo", deviceInfo.toString())
                 .add("dispatchStrategy", dispatchStrategy.toString())
@@ -446,7 +495,11 @@ public class MyActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(String... params) {
             try {
-                executeTestCases();
+                if (crashRestartFlag) {
+                    return "finished";
+                } else {
+                    executeTestCases();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -455,16 +508,16 @@ public class MyActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String result) {
-            Log.i("HighPriorityTask", result );
+            Log.i("HighPriorityTask", result);
             pb_2.setProgress(100);
             if (pb_2.getProgress() >= 100) {
                 //stop animation
                 pb_2.setAnimRun(false);
             }
-            if(isTheLastTestExecuted){
+            if (isTheLastTestExecuted || CollectionUtils.isEmpty(batchTestCaseIds)) {
                 startCrowdTestingButton.setEnabled(true);
                 textview.setText("Finished!");
-            }else{
+            } else {
                 startCrowdTestingButton = (CircleButton) findViewById(R.id.startCrowdTesting);
                 startCrowdTestingButton.callOnClick();
             }
@@ -473,20 +526,20 @@ public class MyActivity extends AppCompatActivity {
         @Override
         protected void onProgressUpdate(Integer... values) {
             super.onProgressUpdate(values);
-            System.out.println("====================onProgressUpdate===================="+values);
+            System.out.println("====================onProgressUpdate====================" + values);
             if (values != null && values.length > 0) {
                 pb_2.setProgress(values[0]);
-                System.out.println("====================onProgressUpdate setProgress===================="+values[0]);
+                System.out.println("====================onProgressUpdate setProgress====================" + values[0]);
             }
         }
 
-        public void executeTestCases(){
+        public void executeTestCases() {
             System.out.println("=============================[Start run test cases]");
             //step1. collect all test cases from DexFile
             List<String> allTestCaseClasses = getTestFromDex();
             List<String> needExecutedTests = new ArrayList<>();
-            for(String s : batchTestCaseIds){
-                if(allTestCaseClasses.contains(s)){
+            for (String s : batchTestCaseIds) {
+                if (allTestCaseClasses.contains(s)) {
                     needExecutedTests.add(s);
                 }
             }
@@ -498,24 +551,25 @@ public class MyActivity extends AppCompatActivity {
             //delete patch apk
             //Tinker.with(context).cleanPatch();
         }
+
         public void executeTests(List<String> testCaseClasses) {
             System.out.println("==========================Begin Test Case=================================");
             int totalTestNum = testCaseClasses.size();
             int count = 0;
-            System.out.println("=============================totalTestNum====================="+totalTestNum);
+            System.out.println("=============================totalTestNum=====================" + totalTestNum);
             for (String testCaseClass : testCaseClasses) {
-                if(testCaseClass.contains("TestCase_com_adsi_kioware_client_mobile_app__1447081389")){
+                if (testCaseClass.contains("TestCase_com_adsi_kioware_client_mobile_app__1447081389")) {
                     isTheLastTestExecuted = true;
                 }
                 try {
-                    count ++;
-                    System.out.println("================count================testCaseClass====================="+count+";"+testCaseClass);
+                    count++;
+                    System.out.println("================count================testCaseClass=====================" + count + ";" + testCaseClass);
                     executeSingelTest(testCaseClass);
                     int progress = (int) (count * 1.0f / totalTestNum * 100);
-                    System.out.println("====================publishProgress===================="+progress);
+                    System.out.println("====================publishProgress====================" + progress);
                     publishProgress(progress);
                 } catch (Exception e) {
-                    System.out.println("==========================Test Case Exception==========================" + testCaseClass +e.getMessage());
+                    System.out.println("==========================Test Case Exception==========================" + testCaseClass + e.getMessage());
                     continue;
                 }
             }
@@ -529,7 +583,7 @@ public class MyActivity extends AppCompatActivity {
                 c = Class.forName(testCaseClass);
                 testClassFile = resolveTestClass(c);
             } catch (Exception e) {
-                System.out.println("==========================resolveTestClass Exception==========================" + testCaseClass +";"+e.getStackTrace());
+                System.out.println("==========================resolveTestClass Exception==========================" + testCaseClass + ";" + e.getStackTrace());
                 return;
             }
 
@@ -777,13 +831,4 @@ public class MyActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-
-        if (!hasFocus) {
-            Intent ctx= new Intent(Intent.ACTION_APP_ERROR);
-            sendBroadcast(ctx);
-        }
-    }
 }
