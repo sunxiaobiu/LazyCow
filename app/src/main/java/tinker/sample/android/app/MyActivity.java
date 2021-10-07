@@ -278,10 +278,12 @@ public class MyActivity extends AppCompatActivity {
     public class UpdateStrategyCheckBox extends AsyncTask<String, Integer, String> {
         @Override
         protected String doInBackground(String... strings) {
+            DeviceInfo deviceInfo = new DeviceInfo(context);
             OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
                     .writeTimeout(2, TimeUnit.MINUTES)
                     .readTimeout(2, TimeUnit.MINUTES);
             RequestBody requestBody = new FormBody.Builder()
+                    .add("deviceInfo", deviceInfo.toString())
                     .add("deviceId", deviceId)
                     .build();
             Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/checkDispatchStrategy").post(requestBody).build();
