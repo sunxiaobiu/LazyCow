@@ -81,6 +81,7 @@ import tinker.sample.android.receiver.PatchUpgradeReceiver;
 import tinker.sample.android.receiver.UpdateTextListenner;
 import tinker.sample.android.receiver.UpdateUIListenner;
 import tinker.sample.android.service.LongRunningService;
+import tinker.sample.android.util.Connection;
 import tinker.sample.android.util.DexUtils;
 import tinker.sample.android.util.MySharedPreferences;
 import tinker.sample.android.util.OkHttpSingleton;
@@ -129,13 +130,11 @@ public class MyActivity extends AppCompatActivity {
 
         context = getApplicationContext();
         GlobalRef.applicationContext = context;
-        deviceId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID) + "_" + Build.SERIAL;
+        deviceId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID) + "_" + Build.SERIAL + "_R2";
 
         pb_2 = (PictureProgressBar) findViewById(R.id.pb_2);
         pb_2.setDrawableIds(new int[]{R.drawable.i00, R.drawable.i01, R.drawable.i02, R.drawable.i03, R.drawable.i04, R.drawable.i05, R.drawable.i06});
         pb_2.setAnimRun(false);
-
-        initDispatchStrategySpinner();
 
         startCrowdTestingButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -173,7 +172,7 @@ public class MyActivity extends AppCompatActivity {
         //updateStrategyCheckBox, then startTask2executeTestCases
         try {
             UpdateStrategyCheckBox updateStrategyCheckBox = new UpdateStrategyCheckBox();
-            updateStrategyCheckBox.execute().get();
+            updateStrategyCheckBox.execute();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -252,25 +251,8 @@ public class MyActivity extends AppCompatActivity {
             deviceInfo.setDeviceId(deviceId);
             deviceInfo.setDispatchStrategy(dispatchStrategyBatchSize);
 
-            OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
-                    .writeTimeout(1, TimeUnit.MINUTES)
-                    .readTimeout(1, TimeUnit.MINUTES);
-            RequestBody requestBody = new FormBody.Builder()
-                    .add("deviceInfo", deviceInfo.toString())
-                    .build();
-            Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/updateDevice").post(requestBody).build();
-            builder.build().newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    Log.d(TAG, "【UpdateStrategy2Server】request Failure. Exception:" + e);
-                }
-
-                @Override
-                public void onResponse(Call call, final Response response) throws IOException {
-                    Log.d(TAG, "【UpdateStrategy2Server】request success. ");
-                }
-            });
-
+            String response = Connection.getAPIResponse("http://118.138.236.244:8080/RemoteTest/testCase/updateDevice" + "?" + "deviceInfo="+deviceInfo.toString());
+            System.out.println("=================UpdateStrategy2Server response=================="+response);
             return "finish UpdateStrategy2Server";
         }
     }
@@ -279,33 +261,22 @@ public class MyActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(String... strings) {
             DeviceInfo deviceInfo = new DeviceInfo(context);
-            OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
-                    .writeTimeout(2, TimeUnit.MINUTES)
-                    .readTimeout(2, TimeUnit.MINUTES);
-            RequestBody requestBody = new FormBody.Builder()
-                    .add("deviceInfo", deviceInfo.toString())
-                    .add("deviceId", deviceId)
-                    .build();
-            Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/checkDispatchStrategy").post(requestBody).build();
-            builder.build().newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    Log.d(TAG, "【updateStrategyCheckBox】request Failure. Exception:" + e);
-                }
+            deviceInfo.setDeviceId(deviceId);
+            if(dispatchStrategyBatchSize == null){
+                deviceInfo.setDispatchStrategy(100);
+            }else{
+                deviceInfo.setDispatchStrategy(dispatchStrategyBatchSize);
+            }
 
-                @Override
-                public void onResponse(Call call, final Response response) throws IOException {
-                    Log.d(TAG, "【updateStrategyCheckBox】request success. ");
-                    dispatchStrategyBatchSize = Integer.valueOf(response.body().string());
-                    Log.d(TAG, "【updateStrategyCheckBox】dispatchStrategyBatchSize " + dispatchStrategyBatchSize);
-                }
-            });
-            return "dispatchStrategy finish";
+            String response = Connection.getAPIResponse("http://118.138.236.244:8080/RemoteTest/testCase/checkDispatchStrategy" + "?" + "deviceInfo="+deviceInfo.toString()+"&" + "deviceId="+deviceId);
+            dispatchStrategyBatchSize = Integer.valueOf(response);
+            return response;
         }
 
         @Override
         protected void onPostExecute(String res) {
             Log.i("updateStrategyCheckBox", "onPostExecute");
+            initDispatchStrategySpinner();
             spinnerItems = (Spinner) findViewById(R.id.action_bar_spinner);
             SpinnerAdapter apsAdapter = spinnerItems.getAdapter();  //得到SpinnerAdapter对象
             int k = apsAdapter.getCount();
@@ -327,28 +298,11 @@ public class MyActivity extends AppCompatActivity {
     public class CheckIfRestartFromCrash extends AsyncTask<String, Integer, String> {
         @Override
         protected String doInBackground(String... strings) {
-            OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
-                    .writeTimeout(2, TimeUnit.MINUTES)
-                    .readTimeout(2, TimeUnit.MINUTES);
-            RequestBody requestBody = new FormBody.Builder()
-                    .add("deviceId", deviceId)
-                    .build();
-            Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/checkIfCrash").post(requestBody).build();
-            builder.build().newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    Log.d(TAG, "【checkIfRestartFromCrash】request Failure. Exception:" + e);
-                }
-
-                @Override
-                public void onResponse(Call call, final Response response) throws IOException {
-                    Log.d(TAG, "【checkIfRestartFromCrash】request success. ");
-                    int remainer = Integer.valueOf(response.body().string());
-                    if (remainer != 0) {
-                        crashRestartFlag = true;
-                    }
-                }
-            });
+            String response = Connection.getAPIResponse("http://118.138.236.244:8080/RemoteTest/testCase/checkIfCrash" + "?" + "deviceId="+deviceId);
+            int remainer = Integer.valueOf(response);
+            if (remainer != 0) {
+                crashRestartFlag = true;
+            }
             return "crashRestartFlag finish";
         }
 
@@ -359,39 +313,17 @@ public class MyActivity extends AppCompatActivity {
         }
     }
 
-    public class HasUnexecutedTestTask extends AsyncTask<String, Integer, Integer> {
+    public class HasUnexecutedTestTask extends AsyncTask<String, Integer, List<String>> {
         @Override
-        protected Integer doInBackground(String... strings) {
-            //collect executed tests from server
-            OkHttpClient.Builder builder = new OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
-                    .writeTimeout(2, TimeUnit.MINUTES)
-                    .readTimeout(2, TimeUnit.MINUTES);
-            RequestBody requestBody = new FormBody.Builder()
-                    .add("deviceId", deviceId)
-                    .build();
-            Request request = new Request.Builder().url("http://118.138.236.244:8080/RemoteTest/testCase/collectBatchTests").post(requestBody).build();
-            builder.build().newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    Log.d(TAG, "【collectExecutedTests】request Failure. Exception:" + e);
-                }
-
-                @Override
-                public void onResponse(Call call, final Response response) throws IOException {
-                    Log.d(TAG, "【collectExecutedTests】request success. ");
-                    Gson gson = new Gson();
-                    String str = response.body().string();
-                    if (StringUtils.isNotEmpty(str)) {
-                        batchTestCaseIds = gson.fromJson(str, new ArrayList<String>().getClass());
-                    }
-                }
-            });
-            return dispatchStrategyBatchSize;
+        protected List<String> doInBackground(String... strings) {
+            String response = Connection.getAPIResponse("http://118.138.236.244:8080/RemoteTest/testCase/collectBatchTests" + "?" + "deviceId="+deviceId);
+            Gson gson = new Gson();
+            batchTestCaseIds = gson.fromJson(response, new ArrayList<String>().getClass());
+            return batchTestCaseIds;
         }
 
-
         @Override
-        protected void onPostExecute(Integer dispatchStrategy) {
+        protected void onPostExecute(List<String> dispatchStrategy) {
             Log.i("HasUnexecutedTestTask", "onPostExecute");
             //entrance of executing test
             pb_2.setAnimRun(true);

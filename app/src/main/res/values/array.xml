@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="dispatchStrategyClass">
-        <item>100 </item>
-        <item>500</item>
         <item>1000</item>
+        <item>500</item>
+        <item>100 </item>
     </string-array>
 </resources>
