@@ -24,6 +24,8 @@ import android.net.TrafficStats;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.util.Log;
@@ -60,6 +62,8 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import at.markushi.ui.CircleButton;
@@ -111,6 +115,8 @@ public class MyActivity extends AppCompatActivity {
     private Integer dispatchStrategyBatchSize;
     private Spinner spinnerItems;
     private boolean crashRestartFlag = false;
+
+    private Handler handler;
 
     @SuppressLint("InvalidWakeLockTag")
     @Override
